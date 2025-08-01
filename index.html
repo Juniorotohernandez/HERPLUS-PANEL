@@ -47,25 +47,30 @@
     <section class="bg-blue-800 p-4 rounded-xl shadow-md">
       <h2 class="text-xl font-semibold mb-4">Subir contenido</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" id="titulo" placeholder="Nombre de la película" class="p-2 rounded text-black" />
+        <input type="text" id="titulo" placeholder="Nombre del contenido" class="p-2 rounded text-black" />
         <input type="text" id="categoria" placeholder="Categoría" class="p-2 rounded text-black" />
         <input type="text" id="subcategoria" placeholder="Subcategoría" class="p-2 rounded text-black" />
+        <input type="text" id="imagen" placeholder="URL imagen portada" class="p-2 rounded text-black" />
+        <select id="seccion" class="p-2 rounded text-black">
+          <option value="pelicula">Película</option>
+          <option value="serie">Serie</option>
+          <option value="tv">TV en Vivo</option>
+        </select>
         <input type="text" id="trailer" placeholder="Enlace trailer (YouTube)" class="p-2 rounded text-black" />
-        <input type="text" id="pelicula" placeholder="Enlace <iframe> película" class="p-2 rounded text-black" />
+        <input type="text" id="pelicula" placeholder="Enlace <iframe> o URL de video" class="p-2 rounded text-black" />
         <textarea id="descripcion" placeholder="Descripción" class="p-2 rounded text-black col-span-2"></textarea>
       </div>
       <button onclick="subirContenido()" class="mt-4 px-4 py-2 bg-blue-600 rounded">Subir contenido</button>
     </section>
 
-    <!-- Lista de películas -->
+    <!-- Lista de contenido -->
     <section class="bg-blue-800 p-4 rounded-xl shadow-md">
-      <h2 class="text-xl font-semibold mb-4">Películas subidas</h2>
-      <div id="listaPeliculas" class="space-y-2"></div>
+      <h2 class="text-xl font-semibold mb-4">Contenido subido</h2>
+      <div id="listaPeliculas" class="space-y-4"></div>
     </section>
   </main>
 
   <script>
-    // Configuración de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyD_v8yXx1W6zcGFXXMHeNJh0RSzbnO-j84",
       authDomain: "herplus.firebaseapp.com",
@@ -75,11 +80,9 @@
       appId: "1:556494279952:web:f788776f50840b28434195"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Crear cliente
     async function crearCuenta() {
       const nombre = document.getElementById("nombreUsuario").value;
       const codigo = document.getElementById("codigoGenerado").value;
@@ -93,41 +96,37 @@
       mostrarClientes();
     }
 
-    // Mostrar clientes
     async function mostrarClientes() {
       const tabla = document.getElementById("listaClientes");
       tabla.innerHTML = "";
       const snapshot = await db.collection("clientes").get();
       snapshot.forEach((doc) => {
-        const cliente = doc.data();
+        const c = doc.data();
         tabla.innerHTML += `
           <tr class="border-b border-blue-700">
-            <td class="p-2">${cliente.nombre}</td>
-            <td class="p-2">${cliente.codigo}</td>
-            <td class="p-2">${cliente.meses}</td>
-            <td class="p-2">${cliente.pantallas}</td>
-            <td class="p-2">${cliente.activo ? "Activo" : "Inactivo"}</td>
+            <td class="p-2">${c.nombre}</td>
+            <td class="p-2">${c.codigo}</td>
+            <td class="p-2">${c.meses}</td>
+            <td class="p-2">${c.pantallas}</td>
+            <td class="p-2">${c.activo ? "Activo" : "Inactivo"}</td>
             <td class="p-2 space-x-2">
-              <button onclick="toggleEstado('${doc.id}', ${cliente.activo})" class="px-2 py-1 bg-blue-600 rounded">${cliente.activo ? "Desactivar" : "Activar"}</button>
+              <button onclick="toggleEstado('${doc.id}', ${c.activo})" class="px-2 py-1 bg-blue-600 rounded">${c.activo ? "Desactivar" : "Activar"}</button>
               <button onclick="eliminarCuenta('${doc.id}')" class="px-2 py-1 bg-red-600 rounded">Eliminar</button>
             </td>
           </tr>`;
       });
     }
 
-    // Cambiar estado
     async function toggleEstado(id, estadoActual) {
       await db.collection("clientes").doc(id).update({ activo: !estadoActual });
       mostrarClientes();
     }
 
-    // Eliminar cuenta
     async function eliminarCuenta(id) {
       await db.collection("clientes").doc(id).delete();
       mostrarClientes();
     }
 
-    // Subir película
     async function subirContenido() {
       const titulo = document.getElementById("titulo").value;
       const descripcion = document.getElementById("descripcion").value;
@@ -135,15 +134,16 @@
       const subcategoria = document.getElementById("subcategoria").value;
       const trailer = document.getElementById("trailer").value;
       const pelicula = document.getElementById("pelicula").value;
+      const seccion = document.getElementById("seccion").value;
+      const imagen = document.getElementById("imagen").value;
 
       await db.collection("peliculas").add({
-        titulo, descripcion, categoria, subcategoria, trailer, pelicula
+        titulo, descripcion, categoria, subcategoria, trailer, pelicula, seccion, imagen
       });
 
       mostrarPeliculas();
     }
 
-    // Mostrar películas
     async function mostrarPeliculas() {
       const lista = document.getElementById("listaPeliculas");
       lista.innerHTML = "";
@@ -151,26 +151,27 @@
       snapshot.forEach((doc) => {
         const p = doc.data();
         lista.innerHTML += `
-          <div class="bg-blue-900 p-4 rounded">
-            <h3 class="text-lg font-bold">${p.titulo}</h3>
-            <p class="text-sm">${p.descripcion}</p>
-            <p class="text-xs text-blue-300">${p.categoria} / ${p.subcategoria}</p>
-            <p class="text-xs">Trailer: <a href="${p.trailer}" target="_blank" class="underline">Ver</a></p>
-            <div class="mt-2">${p.pelicula}</div>
-            <div class="mt-2 space-x-2">
-              <button onclick="eliminarPelicula('${doc.id}')" class="px-2 py-1 bg-red-600 rounded">Eliminar</button>
+          <div class="bg-blue-900 p-4 rounded grid md:grid-cols-4 gap-4">
+            <img src="${p.imagen}" alt="${p.titulo}" class="w-full h-48 object-cover rounded" />
+            <div class="md:col-span-3">
+              <h3 class="text-lg font-bold">${p.titulo} <span class="text-sm text-blue-300">[${p.seccion}]</span></h3>
+              <p class="text-sm">${p.descripcion}</p>
+              <p class="text-xs text-blue-300">${p.categoria} / ${p.subcategoria}</p>
+              <p class="text-xs mt-2">Trailer: <a href="${p.trailer}" target="_blank" class="underline">Ver</a></p>
+              <div class="mt-2">${p.pelicula}</div>
+              <div class="mt-2">
+                <button onclick="eliminarPelicula('${doc.id}')" class="px-2 py-1 bg-red-600 rounded">Eliminar</button>
+              </div>
             </div>
           </div>`;
       });
     }
 
-    // Eliminar película
     async function eliminarPelicula(id) {
       await db.collection("peliculas").doc(id).delete();
       mostrarPeliculas();
     }
 
-    // Cargar al iniciar
     mostrarClientes();
     mostrarPeliculas();
   </script>
