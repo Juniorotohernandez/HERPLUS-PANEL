@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HERPLUS Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
@@ -13,6 +12,7 @@
   <header class="bg-blue-900 px-6 py-4 text-2xl font-bold text-center">Panel de Administración HERPLUS</header>
 
   <main class="p-6 space-y-10">
+
     <!-- Crear cuenta cliente -->
     <section class="bg-blue-800 p-4 rounded-xl shadow-md">
       <h2 class="text-xl font-semibold mb-4">Crear cuenta de cliente</h2>
@@ -25,7 +25,7 @@
       <button onclick="crearCuenta()" class="mt-4 px-4 py-2 bg-blue-600 rounded">Crear cuenta</button>
     </section>
 
-    <!-- Lista de cuentas -->
+    <!-- Lista de clientes -->
     <section class="bg-blue-800 p-4 rounded-xl shadow-md">
       <h2 class="text-xl font-semibold mb-4">Clientes registrados</h2>
       <table class="w-full table-auto text-sm text-left">
@@ -47,17 +47,17 @@
     <section class="bg-blue-800 p-4 rounded-xl shadow-md">
       <h2 class="text-xl font-semibold mb-4">Subir contenido</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" id="titulo" placeholder="Nombre del contenido" class="p-2 rounded text-black" />
+        <input type="text" id="titulo" placeholder="Título" class="p-2 rounded text-black" />
         <input type="text" id="categoria" placeholder="Categoría" class="p-2 rounded text-black" />
         <input type="text" id="subcategoria" placeholder="Subcategoría" class="p-2 rounded text-black" />
-        <input type="text" id="imagen" placeholder="URL imagen portada" class="p-2 rounded text-black" />
+        <input type="text" id="imagen" placeholder="URL Imagen" class="p-2 rounded text-black" />
         <select id="seccion" class="p-2 rounded text-black">
           <option value="pelicula">Película</option>
           <option value="serie">Serie</option>
           <option value="tv">TV en Vivo</option>
         </select>
-        <input type="text" id="trailer" placeholder="Enlace trailer (YouTube)" class="p-2 rounded text-black" />
-        <input type="text" id="pelicula" placeholder="Enlace <iframe> o URL de video" class="p-2 rounded text-black" />
+        <input type="text" id="trailer" placeholder="Trailer" class="p-2 rounded text-black" />
+        <input type="text" id="pelicula" placeholder="Enlace Película o <iframe>" class="p-2 rounded text-black" />
         <textarea id="descripcion" placeholder="Descripción" class="p-2 rounded text-black col-span-2"></textarea>
       </div>
       <button onclick="subirContenido()" class="mt-4 px-4 py-2 bg-blue-600 rounded">Subir contenido</button>
@@ -68,7 +68,49 @@
       <h2 class="text-xl font-semibold mb-4">Contenido subido</h2>
       <div id="listaPeliculas" class="space-y-4"></div>
     </section>
+
   </main>
+
+  <!-- Modal Editar Cliente -->
+  <div id="modalEditarCliente" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-blue-800 p-6 rounded-xl w-full max-w-md">
+      <h2 class="text-xl mb-4 font-bold">Editar Cliente</h2>
+      <input type="text" id="editarNombre" placeholder="Nombre" class="w-full mb-2 p-2 rounded text-black" />
+      <input type="number" id="editarMeses" placeholder="Meses" class="w-full mb-2 p-2 rounded text-black" />
+      <input type="number" id="editarPantallas" placeholder="Pantallas" class="w-full mb-2 p-2 rounded text-black" />
+      <div class="flex justify-between mt-4">
+        <button onclick="guardarEdicionCliente()" class="bg-green-600 px-4 py-2 rounded">Guardar</button>
+        <button onclick="cerrarModalCliente()" class="bg-red-600 px-4 py-2 rounded">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Contenido -->
+  <div id="modalEditar" class="fixed inset-0 bg-black bg-opacity-80 hidden justify-center items-center z-50">
+    <div class="bg-blue-800 p-6 rounded-xl w-full max-w-xl relative">
+      <button onclick="cerrarModalEditar()" class="absolute top-2 right-3 text-white text-xl">✖</button>
+      <h2 class="text-xl font-bold mb-4">Editar contenido</h2>
+      <input type="hidden" id="editId" />
+      <div class="grid grid-cols-1 gap-3">
+        <input type="text" id="editTitulo" class="p-2 rounded text-black" placeholder="Título" />
+        <textarea id="editDescripcion" class="p-2 rounded text-black" placeholder="Descripción"></textarea>
+        <input type="text" id="editCategoria" class="p-2 rounded text-black" placeholder="Categoría" />
+        <input type="text" id="editSubcategoria" class="p-2 rounded text-black" placeholder="Subcategoría" />
+        <input type="text" id="editTrailer" class="p-2 rounded text-black" placeholder="Trailer" />
+        <input type="text" id="editImagen" class="p-2 rounded text-black" placeholder="Imagen" />
+        <input type="text" id="editPelicula" class="p-2 rounded text-black" placeholder="Película o iframe" />
+        <select id="editSeccion" class="p-2 rounded text-black">
+          <option value="pelicula">Película</option>
+          <option value="serie">Serie</option>
+          <option value="tv">TV en Vivo</option>
+        </select>
+      </div>
+      <div class="flex gap-4 justify-end mt-4">
+        <button onclick="guardarEdicion()" class="bg-green-600 px-4 py-2 rounded">Guardar</button>
+        <button onclick="cerrarModalEditar()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -79,28 +121,25 @@
       messagingSenderId: "556494279952",
       appId: "1:556494279952:web:f788776f50840b28434195"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    let clienteEditandoId = "";
+
     async function crearCuenta() {
-      const nombre = document.getElementById("nombreUsuario").value;
-      const codigo = document.getElementById("codigoGenerado").value;
-      const meses = parseInt(document.getElementById("meses").value);
-      const pantallas = parseInt(document.getElementById("pantallas").value);
-
-      await db.collection("clientes").add({
-        nombre, codigo, meses, pantallas, activo: true
-      });
-
+      const nombre = nombreUsuario.value;
+      const codigo = codigoGenerado.value;
+      const meses = parseInt(meses.value);
+      const pantallas = parseInt(pantallas.value);
+      await db.collection("clientes").add({ nombre, codigo, meses, pantallas, activo: true });
       mostrarClientes();
     }
 
     async function mostrarClientes() {
-      const tabla = document.getElementById("listaClientes");
+      const tabla = listaClientes;
       tabla.innerHTML = "";
       const snapshot = await db.collection("clientes").get();
-      snapshot.forEach((doc) => {
+      snapshot.forEach(doc => {
         const c = doc.data();
         tabla.innerHTML += `
           <tr class="border-b border-blue-700">
@@ -110,16 +149,33 @@
             <td class="p-2">${c.pantallas}</td>
             <td class="p-2">${c.activo ? "Activo" : "Inactivo"}</td>
             <td class="p-2 space-x-2">
-              <button onclick="toggleEstado('${doc.id}', ${c.activo})" class="px-2 py-1 bg-blue-600 rounded">${c.activo ? "Desactivar" : "Activar"}</button>
+              <button onclick="editarCliente('${doc.id}', '${c.nombre}', ${c.meses}, ${c.pantallas})" class="px-2 py-1 bg-yellow-500 rounded">Editar</button>
               <button onclick="eliminarCuenta('${doc.id}')" class="px-2 py-1 bg-red-600 rounded">Eliminar</button>
             </td>
           </tr>`;
       });
     }
 
-    async function toggleEstado(id, estadoActual) {
-      await db.collection("clientes").doc(id).update({ activo: !estadoActual });
+    function editarCliente(id, nombre, meses, pantallas) {
+      clienteEditandoId = id;
+      editarNombre.value = nombre;
+      editarMeses.value = meses;
+      editarPantallas.value = pantallas;
+      modalEditarCliente.classList.remove("hidden");
+    }
+
+    async function guardarEdicionCliente() {
+      await db.collection("clientes").doc(clienteEditandoId).update({
+        nombre: editarNombre.value,
+        meses: parseInt(editarMeses.value),
+        pantallas: parseInt(editarPantallas.value)
+      });
+      cerrarModalCliente();
       mostrarClientes();
+    }
+
+    function cerrarModalCliente() {
+      modalEditarCliente.classList.add("hidden");
     }
 
     async function eliminarCuenta(id) {
@@ -128,43 +184,76 @@
     }
 
     async function subirContenido() {
-      const titulo = document.getElementById("titulo").value;
-      const descripcion = document.getElementById("descripcion").value;
-      const categoria = document.getElementById("categoria").value;
-      const subcategoria = document.getElementById("subcategoria").value;
-      const trailer = document.getElementById("trailer").value;
-      const pelicula = document.getElementById("pelicula").value;
-      const seccion = document.getElementById("seccion").value;
-      const imagen = document.getElementById("imagen").value;
-
-      await db.collection("peliculas").add({
-        titulo, descripcion, categoria, subcategoria, trailer, pelicula, seccion, imagen
-      });
-
+      const data = {
+        titulo: titulo.value,
+        descripcion: descripcion.value,
+        categoria: categoria.value,
+        subcategoria: subcategoria.value,
+        imagen: imagen.value,
+        trailer: trailer.value,
+        pelicula: pelicula.value,
+        seccion: seccion.value,
+      };
+      await db.collection("peliculas").add(data);
       mostrarPeliculas();
     }
 
     async function mostrarPeliculas() {
-      const lista = document.getElementById("listaPeliculas");
-      lista.innerHTML = "";
+      const contenedor = listaPeliculas;
+      contenedor.innerHTML = "";
       const snapshot = await db.collection("peliculas").get();
-      snapshot.forEach((doc) => {
+      snapshot.forEach(doc => {
         const p = doc.data();
-        lista.innerHTML += `
-          <div class="bg-blue-900 p-4 rounded grid md:grid-cols-4 gap-4">
-            <img src="${p.imagen}" alt="${p.titulo}" class="w-full h-48 object-cover rounded" />
-            <div class="md:col-span-3">
-              <h3 class="text-lg font-bold">${p.titulo} <span class="text-sm text-blue-300">[${p.seccion}]</span></h3>
-              <p class="text-sm">${p.descripcion}</p>
-              <p class="text-xs text-blue-300">${p.categoria} / ${p.subcategoria}</p>
-              <p class="text-xs mt-2">Trailer: <a href="${p.trailer}" target="_blank" class="underline">Ver</a></p>
-              <div class="mt-2">${p.pelicula}</div>
-              <div class="mt-2">
-                <button onclick="eliminarPelicula('${doc.id}')" class="px-2 py-1 bg-red-600 rounded">Eliminar</button>
+        contenedor.innerHTML += `
+          <div class="bg-blue-900 p-4 rounded">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="text-lg font-bold">${p.titulo} <span class="text-sm">[${p.seccion}]</span></h3>
+                <p class="text-sm text-blue-200">${p.categoria} / ${p.subcategoria}</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="abrirModalEditar('${doc.id}')" class="px-3 py-1 bg-blue-600 rounded">Editar</button>
+                <button onclick="eliminarPelicula('${doc.id}')" class="px-3 py-1 bg-red-600 rounded">Eliminar</button>
               </div>
             </div>
           </div>`;
       });
+    }
+
+    async function abrirModalEditar(id) {
+      const doc = await db.collection("peliculas").doc(id).get();
+      const p = doc.data();
+      editId.value = id;
+      editTitulo.value = p.titulo;
+      editDescripcion.value = p.descripcion;
+      editCategoria.value = p.categoria;
+      editSubcategoria.value = p.subcategoria;
+      editTrailer.value = p.trailer;
+      editImagen.value = p.imagen;
+      editPelicula.value = p.pelicula;
+      editSeccion.value = p.seccion;
+      modalEditar.classList.remove("hidden");
+    }
+
+    async function guardarEdicion() {
+      const id = editId.value;
+      const data = {
+        titulo: editTitulo.value,
+        descripcion: editDescripcion.value,
+        categoria: editCategoria.value,
+        subcategoria: editSubcategoria.value,
+        trailer: editTrailer.value,
+        imagen: editImagen.value,
+        pelicula: editPelicula.value,
+        seccion: editSeccion.value
+      };
+      await db.collection("peliculas").doc(id).update(data);
+      cerrarModalEditar();
+      mostrarPeliculas();
+    }
+
+    function cerrarModalEditar() {
+      modalEditar.classList.add("hidden");
     }
 
     async function eliminarPelicula(id) {
@@ -177,5 +266,6 @@
   </script>
 </body>
 </html>
+
 
 
