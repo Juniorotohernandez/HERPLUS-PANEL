@@ -4,247 +4,358 @@
   <meta charset="UTF-8">
   <title>Panel HERPLUS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { background:#0b1320; }
+    .glass { background:rgba(17,24,39,0.9); backdrop-filter:blur(6px); }
+    .dot { width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px; }
+    .dot.green { background:#22c55e; box-shadow:0 0 8px #22c55e; }
+    .dot.gray { background:#6b7280; }
+    .pill { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:2px 8px; border-radius:999px; font-size:12px; }
+    .btn { padding:8px 12px; border-radius:8px; font-weight:600; }
+    .btn-blue { background:#2563eb; } .btn-blue:hover{background:#1d4ed8;}
+    .btn-gray { background:#4b5563; } .btn-gray:hover{background:#374151;}
+    .btn-red  { background:#dc2626; } .btn-red:hover {background:#b91c1c;}
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-6">
+<body class="text-white min-h-screen">
 
-  <!-- Panel Principal -->
-  <div id="panelPrincipal" class="space-y-6">
-    <h1 class="text-3xl font-bold mb-6">Panel de Administración HERPLUS</h1>
+  <!-- ===== Modal Login Admin (PIN) ===== -->
+  <div id="adminLogin" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+    <div class="glass p-6 rounded w-full max-w-sm shadow-xl">
+      <h2 class="text-xl font-bold mb-1 text-center">Panel HERPLUS</h2>
+      <p class="text-sm text-gray-300 mb-4 text-center">Acceso administrador</p>
 
-    <!-- Crear Cliente -->
-    <section class="mb-10">
-      <h2 class="text-xl font-bold mb-2">👤 Crear Cliente</h2>
-      <div class="grid md:grid-cols-7 gap-4">
-        <input id="nombre" type="text" placeholder="Nombre" class="p-2 rounded text-black">
-        <input id="codigo" type="text" placeholder="Código" class="p-2 rounded text-black">
-        <input id="meses" type="number" placeholder="Meses" class="p-2 rounded text-black">
-        <input id="pantallas" type="number" placeholder="Pantallas" class="p-2 rounded text-black">
-        <select id="activo" class="p-2 rounded text-black">
-          <option value="true">Activo</option>
-          <option value="false">Inactivo</option>
-        </select>
-        <button id="btnCrearCliente" class="bg-blue-600 px-4 py-2 rounded">Crear</button>
-        <button id="btnRecargarUsuarios" class="bg-gray-600 px-4 py-2 rounded">Recargar</button>
+      <!-- Login -->
+      <div id="loginBlock">
+        <input id="adminPinInput" type="password" class="w-full p-2 rounded text-black mb-3" placeholder="PIN de administrador">
+        <button id="btnAdminLogin" class="btn btn-blue w-full">Acceder</button>
       </div>
-    </section>
 
-    <!-- Listado de Usuarios Registrados -->
-    <section class="mb-10">
-      <h2 class="text-xl font-bold mb-2">👥 Usuarios Registrados</h2>
-      <div id="usuariosList" class="mt-4 space-y-3"></div>
-    </section>
-
-    <!-- Botones para acceder a paneles -->
-    <div class="space-x-4">
-      <button onclick="mostrarPanelSubirSeries()" class="bg-green-600 px-6 py-3 rounded text-white font-semibold">
-        Subir / Editar Serie
-      </button>
-      <button onclick="mostrarPanelSubirPelicula()" class="bg-blue-600 px-6 py-3 rounded text-white font-semibold">
-        Subir / Editar Película
-      </button>
-    </div>
-
-    <!-- FILTROS PELÍCULAS -->
-    <section class="mt-8">
-      <h2 class="text-xl font-bold mb-2">🎞️ Películas</h2>
-      <div class="flex flex-wrap gap-3 items-end mb-3">
-        <div>
-          <label class="block text-sm mb-1">Buscar</label>
-          <input id="buscarPeliculas" type="text" class="p-2 rounded text-black" placeholder="Título...">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Categoría</label>
-          <select id="filtrarCategoriaPeliculas" class="p-2 rounded text-black">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div class="ml-auto text-sm text-gray-300">
-          <span id="peliculasCounter">0 resultado(s)</span>
-        </div>
+      <!-- Setup PIN (primer uso) -->
+      <div id="setupBlock" class="hidden">
+        <p class="text-sm text-gray-300 mb-2">No hay PIN configurado. Crea uno nuevo:</p>
+        <input id="setupPin1" type="password" class="w-full p-2 rounded text-black mb-2" placeholder="Nuevo PIN">
+        <input id="setupPin2" type="password" class="w-full p-2 rounded text-black mb-3" placeholder="Repetir PIN">
+        <button id="btnSetupPin" class="btn btn-blue w-full">Guardar PIN</button>
       </div>
-      <div id="contenidoListPeliculas" class="space-y-3"></div>
 
-      <!-- FILTROS SERIES -->
-      <h2 class="text-xl font-bold mb-4 mt-8">📺 Series</h2>
-      <div class="flex flex-wrap gap-3 items-end mb-3">
-        <div>
-          <label class="block text-sm mb-1">Buscar</label>
-          <input id="buscarSeries" type="text" class="p-2 rounded text-black" placeholder="Título...">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Categoría</label>
-          <select id="filtrarCategoriaSeries" class="p-2 rounded text-black">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div class="ml-auto text-sm text-gray-300">
-          <span id="seriesCounter">0 resultado(s)</span>
-        </div>
-      </div>
-      <div id="contenidoListSeries" class="space-y-3"></div>
-    </section>
-  </div>
-
-  <!-- Modal de Edición de Usuario -->
-  <div id="modalEdicionUsuario" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
-    <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
-      <button onclick="cerrarModalEdicion()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
-      <h3 class="text-lg font-bold mb-4">Editar Usuario</h3>
-      <div class="grid gap-2">
-        <input id="editNombre" class="p-2 rounded text-black" placeholder="Nombre" />
-        <input id="editCodigo" class="p-2 rounded text-black" placeholder="Código" />
-        <input id="editMeses" class="p-2 rounded text-black" placeholder="Meses" />
-        <input id="editPantallas" class="p-2 rounded text-black" placeholder="Pantallas" />
-        <select id="editActivo" class="p-2 rounded text-black">
-          <option value="true">Activo</option>
-          <option value="false">Inactivo</option>
-        </select>
-        <button id="btnGuardarUsuario" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
-        <button onclick="cerrarModalEdicion()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
-      </div>
+      <p id="adminMsg" class="text-sm mt-3 text-center text-red-300 hidden">Mensaje</p>
     </div>
   </div>
 
-  <!-- Modal de Edición de Película -->
-  <div id="modalEdicionPelicula" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
-    <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
-      <button onclick="cerrarModalEdicionPelicula()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
-      <h3 class="text-lg font-bold mb-4">Editar Película</h3>
-      <div class="grid gap-2">
-        <input id="editTituloPelicula" class="p-2 rounded text-black" placeholder="Título" />
-        <input id="editDescripcionPelicula" class="p-2 rounded text-black" placeholder="Descripción" />
-        <input id="editImagenPelicula" class="p-2 rounded text-black" placeholder="Imagen (URL)" />
-        <input id="editTrailerPelicula" class="p-2 rounded text-black" placeholder="Trailer (URL o iframe)" />
-        <input id="editPelicula" class="p-2 rounded text-black" placeholder="Película (URL o iframe)" />
-        <select id="editSeccionPelicula" class="p-2 rounded text-black">
-          <option value="pelicula">Película</option>
-          <option value="serie">Serie</option>
-          <option value="tv">TV en vivo</option>
-        </select>
-        <select id="editCategoriaPelicula" class="p-2 rounded text-black"></select>
-        <input id="editNuevaCategoriaPelicula" class="p-2 rounded text-black" placeholder="Agregar nueva categoría (opcional)" />
-        <button id="btnGuardarPelicula" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
-        <button onclick="cerrarModalEdicionPelicula()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
+  <!-- ===== Modal Cambiar PIN ===== -->
+  <div id="pinChangeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-80">
+    <div class="glass p-6 rounded w-full max-w-md shadow-xl relative">
+      <button id="btnClosePinChange" class="absolute top-2 right-3 text-red-300 text-xl">✕</button>
+      <h3 class="text-lg font-bold mb-4">Cambiar PIN</h3>
+      <input id="pinCur" type="password" class="w-full p-2 rounded text-black mb-2" placeholder="PIN actual">
+      <input id="pinNew1" type="password" class="w-full p-2 rounded text-black mb-2" placeholder="Nuevo PIN">
+      <input id="pinNew2" type="password" class="w-full p-2 rounded text-black mb-3" placeholder="Repetir nuevo PIN">
+      <div class="flex gap-2 justify-end">
+        <button id="btnDoChangePin" class="btn btn-blue">Guardar</button>
+        <button id="btnCancelChangePin" class="btn btn-gray">Cancelar</button>
       </div>
+      <p id="pinChangeMsg" class="text-sm mt-3 text-red-300 hidden">Mensaje</p>
     </div>
   </div>
 
-  <!-- Panel Subir Series -->
-  <div id="panelSubirSeries" class="hidden space-y-6">
-    <h1 class="text-3xl font-bold mb-6">Series • Crear / Editar</h1>
+  <!-- ===== App (se muestra tras login) ===== -->
+  <div id="appContainer" class="hidden p-6">
 
-    <div class="bg-gray-800 p-6 rounded-lg mb-6">
-      <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm mb-1">Título</label>
-          <input id="tituloSerie" type="text" class="p-2 text-black rounded w-full" placeholder="Título de la serie">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Categoría</label>
-          <select id="categoriaSerie" class="p-2 text-black rounded w-full">
-            <option value="">Seleccionar Categoría</option>
+    <!-- Header -->
+    <header class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h1 class="text-3xl font-bold mb-1">Panel de Administración HERPLUS</h1>
+        <p class="text-sm text-gray-300">
+          Cambiar <b>pantallas</b> no afecta días. Cambiar <b>meses</b> reinicia el periodo (<code>fechaRegistro</code>).
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnOpenChangePin" class="btn btn-gray">Cambiar PIN</button>
+        <button id="btnAdminLogout" class="btn btn-red">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <!-- ===== Panel Principal ===== -->
+    <div id="panelPrincipal" class="space-y-6">
+
+      <!-- Crear Cliente -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold mb-2">👤 Crear Cliente</h2>
+        <div class="grid md:grid-cols-7 gap-4">
+          <input id="nombre" type="text" placeholder="Nombre" class="p-2 rounded text-black">
+          <input id="codigo" type="text" placeholder="Código" class="p-2 rounded text-black">
+          <input id="meses" type="number" placeholder="Meses" class="p-2 rounded text-black">
+          <input id="pantallas" type="number" placeholder="Pantallas" class="p-2 rounded text-black">
+          <select id="activo" class="p-2 rounded text-black">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
           </select>
-          <input id="nuevaCategoriaSerie" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+          <button id="btnCrearCliente" class="bg-blue-600 px-4 py-2 rounded">Crear</button>
+          <button id="btnRecargarUsuarios" class="bg-gray-600 px-4 py-2 rounded">Recargar</button>
         </div>
+      </section>
+
+      <!-- Listado de Usuarios + FILTROS -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold mb-2">👥 Usuarios Registrados</h2>
+
+        <!-- Filtros de usuarios (NUEVO) -->
+        <div class="glass p-4 rounded mb-4">
+          <div class="grid md:grid-cols-5 gap-3 items-end">
+            <div>
+              <label class="block text-sm mb-1">Buscar</label>
+              <input id="uBuscar" type="text" class="p-2 rounded text-black w-full" placeholder="Nombre o código...">
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Estado</label>
+              <select id="uEstado" class="p-2 rounded text-black w-full">
+                <option value="">Todos</option>
+                <option value="conectado">Conectados</option>
+                <option value="desconectado">Desconectados</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Vence en ≤ (días)</label>
+              <input id="uVenceEn" type="number" min="0" class="p-2 rounded text-black w-full" placeholder="Ej. 7">
+            </div>
+            <div class="flex gap-2">
+              <button id="uSoloPorVencer" class="btn btn-blue w-full">Solo por vencer (≤3d)</button>
+              <button id="uLimpiarFiltros" class="btn btn-gray w-full">Limpiar</button>
+            </div>
+            <div class="text-right">
+              <span id="uCounter" class="pill">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="usuariosList" class="mt-4 space-y-3"></div>
+      </section>
+
+      <!-- Botones para acceder a paneles -->
+      <div class="space-x-4">
+        <button onclick="mostrarPanelSubirSeries()" class="bg-green-600 px-6 py-3 rounded text-white font-semibold">
+          Subir / Editar Serie
+        </button>
+        <button onclick="mostrarPanelSubirPelicula()" class="bg-blue-600 px-6 py-3 rounded text-white font-semibold">
+          Subir / Editar Película
+        </button>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label class="block text-sm mb-1">Portada (URL imagen)</label>
-          <input id="imagenSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+      <!-- FILTROS PELÍCULAS -->
+      <section class="mt-8">
+        <h2 class="text-xl font-bold mb-2">🎞️ Películas</h2>
+        <div class="flex flex-wrap gap-3 items-end mb-3">
+          <div>
+            <label class="block text-sm mb-1">Buscar</label>
+            <input id="buscarPeliculas" type="text" class="p-2 rounded text-black" placeholder="Título...">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Categoría</label>
+            <select id="filtrarCategoriaPeliculas" class="p-2 rounded text-black">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="ml-auto text-sm text-gray-300">
+            <span id="peliculasCounter">0 resultado(s)</span>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
-          <input id="trailerSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
+        <div id="contenidoListPeliculas" class="space-y-3"></div>
+
+        <!-- FILTROS SERIES -->
+        <h2 class="text-xl font-bold mb-4 mt-8">📺 Series</h2>
+        <div class="flex flex-wrap gap-3 items-end mb-3">
+          <div>
+            <label class="block text-sm mb-1">Buscar</label>
+            <input id="buscarSeries" type="text" class="p-2 rounded text-black" placeholder="Título...">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Categoría</label>
+            <select id="filtrarCategoriaSeries" class="p-2 rounded text-black">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="ml-auto text-sm text-gray-300">
+            <span id="seriesCounter">0 resultado(s)</span>
+          </div>
         </div>
-      </div>
-
-      <div class="mt-4">
-        <label class="block text-sm mb-1">Descripción</label>
-        <textarea id="descripcionSerie" rows="3" class="p-2 text-black rounded w-full" placeholder="Resumen..."></textarea>
-      </div>
-
-      <div class="flex items-center justify-between mt-6">
-        <h2 class="text-lg font-semibold">Temporadas</h2>
-        <div class="space-x-2">
-          <button id="btnAddTemp" class="bg-green-600 px-3 py-2 rounded">+ Agregar temporada</button>
-          <button id="btnVistaPreviaSerie" class="bg-amber-500 px-3 py-2 rounded text-black">Vista previa</button>
-          <button id="btnGuardarSerie" class="bg-blue-600 px-3 py-2 rounded">Guardar Serie</button>
-          <button id="btnCancelarEdicionSerie" class="bg-gray-600 px-3 py-2 rounded hidden">Cancelar edición</button>
-        </div>
-      </div>
-
-      <div id="contenedorTemporadas" class="space-y-4 mt-4"></div>
-      <pre id="previewSerie" class="bg-black bg-opacity-40 p-3 rounded overflow-auto mt-4" style="max-height:260px; white-space:pre-wrap; font-size:12px;">{}</pre>
+        <div id="contenidoListSeries" class="space-y-3"></div>
+      </section>
     </div>
 
-    <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
-      Volver al Panel Principal
-    </button>
-  </div>
+    <!-- ===== Modal de Edición de Usuario (extendido) ===== -->
+    <div id="modalEdicionUsuario" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
+      <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
+        <button onclick="cerrarModalEdicion()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
+        <h3 class="text-lg font-bold mb-4">Editar Usuario</h3>
 
-  <!-- Panel Subir Película -->
-  <div id="panelSubirPelicula" class="hidden space-y-6">
-    <h1 class="text-3xl font-bold mb-6">Películas • Crear</h1>
-
-    <div class="bg-gray-800 p-6 rounded-lg mb-6">
-      <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm mb-1">Título</label>
-          <input id="tituloPelicula" type="text" class="p-2 text-black rounded w-full">
+        <!-- Info de fechas/días -->
+        <div class="grid grid-cols-3 gap-3 text-sm text-gray-300 mb-3">
+          <div>Registro: <b id="infoRegistro">—</b></div>
+          <div>Vence: <b id="infoVence">—</b></div>
+          <div>Días restantes: <b id="infoDias">—</b></div>
         </div>
-        <div>
-          <label class="block text-sm mb-1">Categoría</label>
-          <select id="categoriaPelicula" class="p-2 text-black rounded w-full">
-            <option value="">Seleccionar Categoría</option>
+
+        <div class="grid gap-2">
+          <input id="editNombre" class="p-2 rounded text-black" placeholder="Nombre" />
+          <input id="editCodigo" class="p-2 rounded text-black" placeholder="Código" />
+          <input id="editMeses" class="p-2 rounded text-black" placeholder="Meses" />
+          <input id="editPantallas" class="p-2 rounded text-black" placeholder="Pantallas" />
+          <select id="editActivo" class="p-2 rounded text-black">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
           </select>
-          <input id="nuevaCategoriaPelicula" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+          <button id="btnGuardarUsuario" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
+          <button onclick="cerrarModalEdicion()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
         </div>
       </div>
+    </div>
 
-      <div class="grid md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label class="block text-sm mb-1">Portada (URL imagen)</label>
-          <input id="imagenPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
-          <input id="trailerPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
-        </div>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label class="block text-sm mb-1">Película (URL o iframe)</label>
-          <input id="pelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Sección</label>
-          <select id="seccionPelicula" class="p-2 text-black rounded w-full">
+    <!-- ===== Modal de Edición de Película ===== -->
+    <div id="modalEdicionPelicula" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
+      <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
+        <button onclick="cerrarModalEdicionPelicula()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
+        <h3 class="text-lg font-bold mb-4">Editar Película</h3>
+        <div class="grid gap-2">
+          <input id="editTituloPelicula" class="p-2 rounded text-black" placeholder="Título" />
+          <input id="editDescripcionPelicula" class="p-2 rounded text-black" placeholder="Descripción" />
+          <input id="editImagenPelicula" class="p-2 rounded text-black" placeholder="Imagen (URL)" />
+          <input id="editTrailerPelicula" class="p-2 rounded text-black" placeholder="Trailer (URL o iframe)" />
+          <input id="editPelicula" class="p-2 rounded text-black" placeholder="Película (URL o iframe)" />
+          <select id="editSeccionPelicula" class="p-2 rounded text-black">
             <option value="pelicula">Película</option>
+            <option value="serie">Serie</option>
             <option value="tv">TV en vivo</option>
           </select>
+          <select id="editCategoriaPelicula" class="p-2 rounded text-black"></select>
+          <input id="editNuevaCategoriaPelicula" class="p-2 rounded text-black" placeholder="Agregar nueva categoría (opcional)" />
+          <button id="btnGuardarPelicula" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
+          <button onclick="cerrarModalEdicionPelicula()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
         </div>
-      </div>
-
-      <div class="mt-4">
-        <label class="block text-sm mb-1">Descripción</label>
-        <input id="descripcionPelicula" type="text" class="p-2 text-black rounded w-full">
-      </div>
-
-      <div class="flex gap-2 mt-6">
-        <button id="btnSubirPelicula" class="bg-green-600 px-4 py-2 rounded">Subir Película</button>
-        <button id="btnLimpiarPelicula" class="bg-gray-600 px-4 py-2 rounded">Limpiar</button>
       </div>
     </div>
 
-    <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
-      Volver al Panel Principal
-    </button>
-  </div>
+    <!-- ===== Panel Subir Series ===== -->
+    <div id="panelSubirSeries" class="hidden space-y-6">
+      <h1 class="text-3xl font-bold mb-6">Series • Crear / Editar</h1>
+
+      <div class="bg-gray-800 p-6 rounded-lg mb-6">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Título</label>
+            <input id="tituloSerie" type="text" class="p-2 text-black rounded w-full" placeholder="Título de la serie">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Categoría</label>
+            <select id="categoriaSerie" class="p-2 text-black rounded w-full">
+              <option value="">Seleccionar Categoría</option>
+            </select>
+            <input id="nuevaCategoriaSerie" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block text-sm mb-1">Portada (URL imagen)</label>
+            <input id="imagenSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
+            <input id="trailerSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm mb-1">Descripción</label>
+          <textarea id="descripcionSerie" rows="3" class="p-2 text-black rounded w-full" placeholder="Resumen..."></textarea>
+        </div>
+
+        <div class="flex items-center justify-between mt-6">
+          <h2 class="text-lg font-semibold">Temporadas</h2>
+          <div class="space-x-2">
+            <button id="btnAddTemp" class="bg-green-600 px-3 py-2 rounded">+ Agregar temporada</button>
+            <button id="btnVistaPreviaSerie" class="bg-amber-500 px-3 py-2 rounded text-black">Vista previa</button>
+            <button id="btnGuardarSerie" class="bg-blue-600 px-3 py-2 rounded">Guardar Serie</button>
+            <button id="btnCancelarEdicionSerie" class="bg-gray-600 px-3 py-2 rounded hidden">Cancelar edición</button>
+          </div>
+        </div>
+
+        <div id="contenedorTemporadas" class="space-y-4 mt-4"></div>
+        <pre id="previewSerie" class="bg-black bg-opacity-40 p-3 rounded overflow-auto mt-4" style="max-height:260px; white-space:pre-wrap; font-size:12px;">{}</pre>
+      </div>
+
+      <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
+        Volver al Panel Principal
+      </button>
+    </div>
+
+    <!-- ===== Panel Subir Película ===== -->
+    <div id="panelSubirPelicula" class="hidden space-y-6">
+      <h1 class="text-3xl font-bold mb-6">Películas • Crear</h1>
+
+      <div class="bg-gray-800 p-6 rounded-lg mb-6">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Título</label>
+            <input id="tituloPelicula" type="text" class="p-2 text-black rounded w-full">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Categoría</label>
+            <select id="categoriaPelicula" class="p-2 text-black rounded w-full">
+              <option value="">Seleccionar Categoría</option>
+            </select>
+            <input id="nuevaCategoriaPelicula" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block text-sm mb-1">Portada (URL imagen)</label>
+            <input id="imagenPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
+            <input id="trailerPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block text-sm mb-1">Película (URL o iframe)</label>
+            <input id="pelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Sección</label>
+            <select id="seccionPelicula" class="p-2 text-black rounded w-full">
+              <option value="pelicula">Película</option>
+              <option value="tv">TV en vivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm mb-1">Descripción</label>
+          <input id="descripcionPelicula" type="text" class="p-2 text-black rounded w-full">
+        </div>
+
+        <div class="flex gap-2 mt-6">
+          <button id="btnSubirPelicula" class="bg-green-600 px-4 py-2 rounded">Subir Película</button>
+          <button id="btnLimpiarPelicula" class="bg-gray-600 px-4 py-2 rounded">Limpiar</button>
+        </div>
+      </div>
+
+      <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
+        Volver al Panel Principal
+      </button>
+    </div>
+
+  </div><!-- /appContainer -->
 
   <script>
     // ================= Firebase =================
@@ -260,27 +371,43 @@
     const db = firebase.firestore();
 
     // ================= Helpers =================
-    function normalizeInt(v, d=0){ const n = parseInt(v,10); return isNaN(n)?d:n; }
-    function normalizeStr(v){ return (v||"").trim(); }
+    const diaMs = 24*60*60*1000;
+    const SESSION_TTL_MS = 3*60*1000; // 3 min
 
-    function normalizarUrlDrive(url) {
-      try {
+    const normalizeInt = (v,d=0)=>{ const n = parseInt(v,10); return isNaN(n)?d:n; };
+    const normalizeStr = (v)=> (v||"").trim();
+
+    function diasRestantes(fechaRegistro, meses){
+      const fr = fechaRegistro?.toDate?.() ? fechaRegistro.toDate() : (fechaRegistro instanceof Date ? fechaRegistro : new Date());
+      const fin = fr.getTime() + (Number(meses||0)*30*diaMs);
+      const d = Math.max(0, Math.ceil((fin - Date.now())/diaMs));
+      return { dias:d, finTs:fin };
+    }
+    function fmt(ts){
+      const d = new Date(ts);
+      return d.toLocaleDateString('es-ES',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    }
+    function tsToMs(v){ if(v?.toDate) return v.toDate().getTime(); if(typeof v==='number') return v; const n=Number(v); return isNaN(n)?Date.now():n; }
+    function rel(ms){
+      const diff = Date.now()-ms; const s=Math.max(0,Math.floor(diff/1000));
+      if(s<60) return s+'s'; const m=Math.floor(s/60);
+      if(m<60) return m+'m'; const h=Math.floor(m/60);
+      if(h<24) return h+'h'; const d=Math.floor(h/24); return d+'d';
+    }
+
+    function normalizarUrlDrive(url){
+      try{
         const u = new URL(url);
-        if (u.hostname.includes("drive.google.com")) {
-          const m1 = /\/file\/d\/([^/]+)/.exec(u.pathname);
-          if (m1) return `https://drive.google.com/file/d/${m1[1]}/preview`;
-          if (u.pathname === "/open" && u.searchParams.get("id"))
-            return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
-          if (u.pathname === "/uc" && u.searchParams.get("id"))
-            return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
+        if(u.hostname.includes("drive.google.com")){
+          const m1=/\/file\/d\/([^/]+)/.exec(u.pathname);
+          if(m1) return `https://drive.google.com/file/d/${m1[1]}/preview`;
+          if(u.pathname==="/open" && u.searchParams.get("id")) return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
+          if(u.pathname==="/uc" && u.searchParams.get("id")) return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
         }
         return url;
-      } catch { return url; }
+      }catch{ return url; }
     }
-    function extraerSrcDeIframe(html) {
-      const m = /src=["']([^"']+)["']/i.exec(html||"");
-      return m ? m[1] : "";
-    }
+    const extraerSrcDeIframe = (html)=>{ const m=/src=["']([^"']+)["']/i.exec(html||""); return m?m[1]:""; }
     function parseFuente(valor){
       if(!valor) return "";
       const v = valor.trim();
@@ -296,11 +423,13 @@
 
     // ================= Navegación Paneles =================
     function mostrarPanelSubirSeries() {
+      document.getElementById("appContainer").classList.remove("hidden");
       document.getElementById("panelPrincipal").classList.add("hidden");
       document.getElementById("panelSubirPelicula").classList.add("hidden");
       document.getElementById("panelSubirSeries").classList.remove("hidden");
     }
     function mostrarPanelSubirPelicula() {
+      document.getElementById("appContainer").classList.remove("hidden");
       document.getElementById("panelPrincipal").classList.add("hidden");
       document.getElementById("panelSubirSeries").classList.add("hidden");
       document.getElementById("panelSubirPelicula").classList.remove("hidden");
@@ -312,8 +441,112 @@
       cancelarEdicionSerie();
     }
 
+    // ================= Admin PIN Auth =================
+    const ADMIN_DOC = db.collection('admin').doc('panel');
+    const ADMIN_AUTH_TTL_MS = 6*60*60*1000; // 6h
+
+    const $loginModal = document.getElementById('adminLogin');
+    const $loginBlock = document.getElementById('loginBlock');
+    const $setupBlock = document.getElementById('setupBlock');
+    const $adminMsg = document.getElementById('adminMsg');
+    const $app = document.getElementById('appContainer');
+
+    async function sha256Hex(text){
+      const enc = new TextEncoder().encode(text);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      const arr = Array.from(new Uint8Array(buf));
+      return arr.map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function showAdminLogin(){
+      try{
+        const snap = await ADMIN_DOC.get();
+        if (!snap.exists || !snap.data()?.pinHash){
+          $loginBlock.classList.add('hidden');
+          $setupBlock.classList.remove('hidden');
+          $adminMsg.classList.add('hidden');
+        }else{
+          $setupBlock.classList.add('hidden');
+          $loginBlock.classList.remove('hidden');
+          $adminMsg.classList.add('hidden');
+        }
+        $loginModal.classList.remove('hidden');
+      }catch(e){
+        console.error(e);
+        $adminMsg.textContent = 'No se pudo cargar configuración.';
+        $adminMsg.classList.remove('hidden');
+      }
+    }
+    async function tryAdminLogin(){
+      const pin = (document.getElementById('adminPinInput').value || '').trim();
+      if(!pin) return;
+      const snap = await ADMIN_DOC.get();
+      const cfg = snap.data() || {};
+      if(!cfg.pinHash){
+        $adminMsg.textContent = 'No hay PIN configurado. Crea uno primero.';
+        $adminMsg.classList.remove('hidden');
+        $loginBlock.classList.add('hidden');
+        $setupBlock.classList.remove('hidden');
+        return;
+      }
+      const hash = await sha256Hex(pin);
+      if(hash === cfg.pinHash){
+        sessionStorage.setItem('adminAuthedAt', String(Date.now()));
+        $loginModal.classList.add('hidden');
+        $app.classList.remove('hidden');
+        init();
+      }else{
+        $adminMsg.textContent = 'PIN incorrecto.';
+        $adminMsg.classList.remove('hidden');
+      }
+    }
+    async function setupNewPin(){
+      const p1=(document.getElementById('setupPin1').value||'').trim();
+      const p2=(document.getElementById('setupPin2').value||'').trim();
+      if(!p1 || p1.length<4){ $adminMsg.textContent='El PIN debe tener al menos 4 dígitos.'; $adminMsg.classList.remove('hidden'); return; }
+      if(p1!==p2){ $adminMsg.textContent='Los PIN no coinciden.'; $adminMsg.classList.remove('hidden'); return; }
+      const hash = await sha256Hex(p1);
+      await ADMIN_DOC.set({ pinHash:hash, createdAt:new Date() }, { merge:true });
+      sessionStorage.setItem('adminAuthedAt', String(Date.now()));
+      $loginModal.classList.add('hidden');
+      $app.classList.remove('hidden');
+      init();
+    }
+    function adminLogout(){ sessionStorage.removeItem('adminAuthedAt'); location.reload(); }
+    function isAdminAuthed(){ const at=Number(sessionStorage.getItem('adminAuthedAt')||0); return at && (Date.now()-at)<ADMIN_AUTH_TTL_MS; }
+
+    // Cambiar PIN UI
+    const $pinModal = document.getElementById('pinChangeModal');
+    document.getElementById('btnOpenChangePin').addEventListener('click', ()=> $pinModal.classList.remove('hidden'));
+    document.getElementById('btnClosePinChange').addEventListener('click', ()=> $pinModal.classList.add('hidden'));
+    document.getElementById('btnCancelChangePin').addEventListener('click', ()=> $pinModal.classList.add('hidden'));
+    document.getElementById('btnAdminLogout').addEventListener('click', adminLogout);
+    document.getElementById('btnAdminLogin').addEventListener('click', tryAdminLogin);
+    document.getElementById('btnSetupPin').addEventListener('click', setupNewPin);
+    document.getElementById('btnDoChangePin').addEventListener('click', async ()=>{
+      const msg = document.getElementById('pinChangeMsg'); msg.classList.add('hidden');
+      const cur=(document.getElementById('pinCur').value||'').trim();
+      const n1=(document.getElementById('pinNew1').value||'').trim();
+      const n2=(document.getElementById('pinNew2').value||'').trim();
+      if(!cur||!n1||!n2){ msg.textContent='Completa todos los campos.'; msg.classList.remove('hidden'); return; }
+      if(n1!==n2){ msg.textContent='El nuevo PIN no coincide.'; msg.classList.remove('hidden'); return; }
+      if(n1.length<4){ msg.textContent='El nuevo PIN debe tener al menos 4 dígitos.'; msg.classList.remove('hidden'); return; }
+      const snap = await ADMIN_DOC.get(); const cfg=snap.data()||{};
+      const curHash = await sha256Hex(cur);
+      if(curHash!==cfg.pinHash){ msg.textContent='PIN actual incorrecto.'; msg.classList.remove('hidden'); return; }
+      const newHash = await sha256Hex(n1);
+      await ADMIN_DOC.set({ pinHash:newHash, updatedAt:new Date() }, { merge:true });
+      msg.textContent='✅ PIN actualizado.'; msg.classList.remove('hidden'); setTimeout(()=> $pinModal.classList.add('hidden'), 800);
+      document.getElementById('pinCur').value=''; document.getElementById('pinNew1').value=''; document.getElementById('pinNew2').value='';
+    });
+
+    // Boot auth
+    (async ()=>{ if(isAdminAuthed()){ document.getElementById('adminLogin').classList.add('hidden'); $app.classList.remove('hidden'); init(); } else { await showAdminLogin(); } })();
+
     // ================= Clientes =================
     let usuarioEditId = null;
+    let usuarioEditPrev = null;
+
     document.getElementById("btnCrearCliente").addEventListener("click", async () => {
       const data = {
         nombre: normalizeStr(document.getElementById('nombre').value),
@@ -324,73 +557,283 @@
         fechaRegistro: new Date()
       };
       if(!data.nombre || !data.codigo || !data.meses){
-        alert("Completa nombre, código y meses.");
-        return;
+        alert("Completa nombre, código y meses."); return;
       }
       await db.collection("clientes").add(data);
       alert("✅ Cliente creado.");
-      cargarUsuarios();
       ['nombre','codigo','meses','pantallas'].forEach(id=>document.getElementById(id).value="");
       document.getElementById('activo').value='true';
+      cargarUsuarios();
     });
     document.getElementById("btnRecargarUsuarios").addEventListener("click", cargarUsuarios);
 
-    function cargarUsuarios() {
-      const cont = document.getElementById("usuariosList");
-      cont.innerHTML = "";
-      db.collection("clientes").orderBy("nombre").get().then(snapshot => {
-        snapshot.forEach(doc => {
-          const u = doc.data();
-          const div = document.createElement("div");
-          div.className = "bg-gray-800 p-4 rounded flex items-center justify-between";
-          div.innerHTML = `
-            <div>
-              <strong>${u.nombre}</strong> — <span class="text-sm">${u.codigo}</span><br>
-              <span class="text-sm">${u.meses} mes(es) / ${u.pantallas} pantalla(s) — ${u.activo?'Activo':'Inactivo'}</span>
-            </div>
-            <div class="space-x-2">
-              <button class="bg-blue-600 px-2 py-1 rounded" onclick="editarUsuario('${doc.id}')">Editar</button>
-              <button class="bg-red-600 px-2 py-1 rounded" onclick="eliminarUsuario('${doc.id}')">Eliminar</button>
-            </div>
-          `;
-          cont.appendChild(div);
-        });
-      });
-    }
-    function eliminarUsuario(id) {
-      if (confirm("¿Eliminar este usuario?")) {
-        db.collection("clientes").doc(id).delete().then(cargarUsuarios);
-      }
-    }
-    function editarUsuario(id) {
+    async function editarUsuario(id) {
       usuarioEditId = id;
-      db.collection("clientes").doc(id).get().then(doc => {
-        const u = doc.data();
-        document.getElementById('editNombre').value = u.nombre || "";
-        document.getElementById('editCodigo').value = u.codigo || "";
-        document.getElementById('editMeses').value = u.meses || 0;
-        document.getElementById('editPantallas').value = u.pantallas || 0;
-        document.getElementById('editActivo').value = u.activo ? 'true' : 'false';
-        document.getElementById("modalEdicionUsuario").classList.remove("hidden");
-      });
+      const doc = await db.collection("clientes").doc(id).get();
+      const u = doc.data();
+      usuarioEditPrev = { id, ...u };
+
+      document.getElementById('editNombre').value = u.nombre || "";
+      document.getElementById('editCodigo').value = u.codigo || "";
+      document.getElementById('editMeses').value = u.meses ?? 0;
+      document.getElementById('editPantallas').value = u.pantallas ?? 0;
+      document.getElementById('editActivo').value = u.activo ? 'true' : 'false';
+
+      const { dias, finTs } = diasRestantes(u.fechaRegistro, u.meses);
+      document.getElementById('infoRegistro').textContent = u.fechaRegistro?.toDate ? fmt(u.fechaRegistro.toDate().getTime()) : '—';
+      document.getElementById('infoVence').textContent = fmt(finTs);
+      document.getElementById('infoDias').textContent = String(dias);
+
+      document.getElementById("modalEdicionUsuario").classList.remove("hidden");
+      document.getElementById("modalEdicionUsuario").classList.add("flex");
+    }
+    function cerrarModalEdicion() {
+      document.getElementById("modalEdicionUsuario").classList.add("hidden");
+      document.getElementById("modalEdicionUsuario").classList.remove("flex");
+      usuarioEditId = null; usuarioEditPrev = null;
     }
     document.getElementById("btnGuardarUsuario").addEventListener("click", async () => {
-      if (!usuarioEditId) return;
-      const updatedData = {
-        nombre: normalizeStr(document.getElementById('editNombre').value),
-        codigo: normalizeStr(document.getElementById('editCodigo').value),
-        meses: normalizeInt(document.getElementById('editMeses').value),
-        pantallas: normalizeInt(document.getElementById('editPantallas').value),
-        activo: document.getElementById('editActivo').value === 'true'
+      if (!usuarioEditId || !usuarioEditPrev) return;
+
+      const nuevoNombre = normalizeStr(document.getElementById('editNombre').value);
+      const nuevoCodigo = normalizeStr(document.getElementById('editCodigo').value);
+      const nuevoMeses = normalizeInt(document.getElementById('editMeses').value, usuarioEditPrev.meses ?? 0);
+      const nuevoPantallas = normalizeInt(document.getElementById('editPantallas').value, usuarioEditPrev.pantallas ?? 1);
+      const nuevoActivo = document.getElementById('editActivo').value === 'true';
+
+      const patch = {
+        nombre: nuevoNombre || usuarioEditPrev.nombre || '',
+        codigo: nuevoCodigo || usuarioEditPrev.codigo || '',
+        pantallas: nuevoPantallas,
+        activo: nuevoActivo
       };
-      await db.collection("clientes").doc(usuarioEditId).update(updatedData);
+
+      // Solo si cambia meses, reinicia periodo
+      if (nuevoMeses !== (usuarioEditPrev.meses ?? 0)) {
+        patch.meses = nuevoMeses;
+        patch.fechaRegistro = new Date();
+      }
+
+      await db.collection("clientes").doc(usuarioEditId).update(patch);
       alert("✅ Usuario actualizado.");
-      usuarioEditId = null;
       cerrarModalEdicion();
       cargarUsuarios();
     });
-    function cerrarModalEdicion() {
-      document.getElementById("modalEdicionUsuario").classList.add("hidden");
+
+    async function eliminarUsuario(id) {
+      if (!confirm("¿Eliminar este usuario?")) return;
+      await db.collection("clientes").doc(id).delete();
+      cargarUsuarios();
+    }
+
+    // ====== Sesiones en vivo / ahora viendo ======
+    const sessionUnsubs = new Map();
+    function ts(val){ return val?.toDate ? val.toDate().getTime() : (typeof val==='number'?val:0); }
+
+    async function toggleSessions(clienteId){
+      const cont = document.getElementById(`sessions-${clienteId}`);
+      const abierto = !cont.classList.contains('hidden');
+      if (abierto) {
+        cont.classList.add('hidden');
+        const prev = sessionUnsubs.get(clienteId);
+        if (prev){ try{prev();}catch{} sessionUnsubs.delete(clienteId); }
+        return;
+      }
+      cont.classList.remove('hidden');
+      const body = document.getElementById(`sessBody-${clienteId}`);
+      const countEl = document.getElementById(`sessCount-${clienteId}`);
+      body.innerHTML = `<tr><td class="py-3 text-gray-400" colspan="9">Cargando...</td></tr>`;
+
+      const ref = db.collection('clientes').doc(clienteId).collection('sesiones');
+      const unsub = ref.onSnapshot(snap=>{
+        const now = Date.now();
+        let active = 0;
+        const rows = [];
+        snap.forEach(d=>{
+          const s = d.data();
+          const createdMs = ts(s.createdAt);
+          const lastMs = ts(s.lastSeen);
+          const isActive = lastMs >= (now - SESSION_TTL_MS);
+          if (isActive) active++;
+
+          let viendo = '—';
+          if (s.nowPlaying?.title){
+            if (s.nowPlaying.type === 'serie' && (s.nowPlaying.season!=null) && (s.nowPlaying.episodeIndex!=null)){
+              const eNum = s.nowPlaying.episodeIndex + 1;
+              viendo = `${s.nowPlaying.title} · T${s.nowPlaying.season}E${eNum}`;
+            } else {
+              viendo = s.nowPlaying.title;
+            }
+          } else if (s.playerOpen){
+            viendo = '(Reproductor abierto)';
+          }
+
+          rows.push(`
+            <tr class="${isActive?'':'opacity-60'}">
+              <td class="py-2"><span class="dot ${isActive?'green':'gray'}"></span></td>
+              <td class="py-2 mono pr-2">${(s.deviceId || d.id).slice(0,12)}…</td>
+              <td class="py-2 pr-2">${viendo}</td>
+              <td class="py-2 pr-2">${(s.ua||'').slice(0,60)}${(s.ua||'').length>60?'…':''}</td>
+              <td class="py-2 pr-2">${createdMs?fmt(createdMs):'—'}</td>
+              <td class="py-2 pr-2">${lastMs?fmt(lastMs):'—'}</td>
+              <td class="py-2 pr-2">${lastMs?rel(lastMs):'—'}</td>
+              <td class="py-2 pr-2">
+                ${s.focused ? '<span class="pill">focused</span>' : ''}
+                ${s.playerOpen ? '<span class="pill">player</span>' : ''}
+              </td>
+              <td class="py-2">
+                <button class="btn btn-red" data-kill="${d.id}" data-cid="${clienteId}">Expulsar</button>
+              </td>
+            </tr>
+          `);
+        });
+        body.innerHTML = rows.length ? rows.join('') : `<tr><td class="py-3 text-gray-400" colspan="9">Sin sesiones.</td></tr>`;
+        countEl.textContent = `Activas: ${active} / Total: ${snap.size}`;
+        body.querySelectorAll('[data-kill]').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const sid = btn.getAttribute('data-kill');
+            const cid = btn.getAttribute('data-cid');
+            await db.collection('clientes').doc(cid).collection('sesiones').doc(sid).delete();
+          });
+        });
+      });
+      sessionUnsubs.set(clienteId, unsub);
+    }
+    async function killAllSessions(clienteId){
+      if (!confirm('¿Expulsar TODAS las sesiones de este cliente?')) return;
+      const snap = await db.collection('clientes').doc(clienteId).collection('sesiones').get();
+      const batch = db.batch();
+      snap.forEach(d=> batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    // ===== Listado usuarios con filtros =====
+    let usersCache = []; // enriquecidos con _dias, _activeCount, etc.
+
+    function renderUsuariosList(list){
+      const cont = document.getElementById("usuariosList");
+      cont.innerHTML = "";
+
+      list.forEach(c=>{
+        const diasClase = c._dias<=3 ? 'text-yellow-300' : 'text-gray-300';
+        const conectado = c._activeCount>0;
+        const estadoHtml = conectado
+          ? `<span class="dot green"></span> Conectado · Sesiones: <b>${c._activeCount}</b>${c._nowPlayingStr ? ` · Viendo: <b>${c._nowPlayingStr}</b>` : ''}`
+          : `<span class="dot gray"></span> Desconectado · Última conexión: <b>${c._lastSeenMax ? fmt(c._lastSeenMax) : '—'}</b>`;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = "bg-gray-800 p-4 rounded";
+
+        wrapper.innerHTML = `
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="space-y-1">
+              <div class="text-lg font-semibold">${c.nombre || '—'} <span class="text-sm text-gray-400">(${c.codigo || '—'})</span></div>
+              <div class="text-sm text-gray-300">Meses: <b>${c.meses ?? 0}</b> • Pantallas: <b>${c.pantallas ?? 0}</b> • Estado: <b>${c.activo ? 'Activo' : 'Inactivo'}</b></div>
+              <div class="text-sm text-gray-300">Registrado: <b>${c.fechaRegistro?.toDate ? fmt(c.fechaRegistro.toDate().getTime()) : '—'}</b></div>
+              <div class="text-sm ${diasClase}">Vence: <b>${fmt(c._venceTs)}</b> • Días restantes: <b>${c._dias}</b></div>
+              <div class="text-sm">${estadoHtml}</div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-blue" data-edit="${c.id}">Editar</button>
+              <button class="btn btn-gray" data-sessions="${c.id}">Ver sesiones</button>
+              <button class="btn btn-red" data-del="${c.id}">Eliminar</button>
+            </div>
+          </div>
+
+          <div id="sessions-${c.id}" class="mt-3 hidden">
+            <div class="flex items-center justify-between">
+              <h4 class="font-semibold">Sesiones</h4>
+              <div class="flex gap-2">
+                <span class="pill" id="sessCount-${c.id}">—</span>
+                <button class="btn btn-red" data-killall="${c.id}">Expulsar todas</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto mt-2">
+              <table class="w-full text-sm">
+                <thead class="text-gray-300">
+                  <tr>
+                    <th class="text-left py-2">Estado</th>
+                    <th class="text-left py-2">Dispositivo</th>
+                    <th class="text-left py-2">Viendo</th>
+                    <th class="text-left py-2">User Agent</th>
+                    <th class="text-left py-2">Creado</th>
+                    <th class="text-left py-2">Último latido</th>
+                    <th class="text-left py-2">Hace</th>
+                    <th class="text-left py-2">Flags</th>
+                    <th class="text-left py-2">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="sessBody-${c.id}"></tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        wrapper.querySelector('[data-edit]').addEventListener('click', ()=> editarUsuario(c.id));
+        wrapper.querySelector('[data-del]').addEventListener('click', ()=> eliminarUsuario(c.id));
+        wrapper.querySelector('[data-sessions]').addEventListener('click', ()=> toggleSessions(c.id));
+        wrapper.querySelector('[data-killall]').addEventListener('click', ()=> killAllSessions(c.id));
+
+        cont.appendChild(wrapper);
+      });
+
+      if (!list.length){
+        cont.innerHTML = `<div class="text-gray-400">Sin resultados.</div>`;
+      }
+      document.getElementById('uCounter').textContent = `${list.length} usuario(s)`;
+    }
+
+    function applyUserFilters(){
+      const txt = (document.getElementById('uBuscar').value||'').toLowerCase();
+      const est = document.getElementById('uEstado').value; // '', 'conectado', 'desconectado'
+      const vence = normalizeInt(document.getElementById('uVenceEn').value, 0);
+
+      const filtered = usersCache.filter(u=>{
+        const okTxt = !txt || (u.nombre||'').toLowerCase().includes(txt) || (u.codigo||'').toLowerCase().includes(txt);
+        const okEst = est==='' || (est==='conectado' ? u._activeCount>0 : u._activeCount===0);
+        const okVence = vence<=0 || u._dias <= vence;
+        return okTxt && okEst && okVence;
+      });
+      renderUsuariosList(filtered);
+    }
+
+    async function cargarUsuarios() {
+      // Cerrar watchers previos
+      sessionUnsubs.forEach(unsub=>{ try{unsub();}catch{} });
+      sessionUnsubs.clear();
+
+      const snap = await db.collection("clientes").orderBy("nombre").get();
+      const arr = [];
+
+      for (const doc of snap.docs){
+        const u = doc.data();
+        const { dias, finTs } = diasRestantes(u.fechaRegistro, u.meses);
+
+        let active=0, lastMax=0, nowPlayingStr='';
+        const ss = await db.collection('clientes').doc(doc.id).collection('sesiones').orderBy('lastSeen','desc').get();
+        const cutoff = Date.now() - SESSION_TTL_MS;
+        ss.forEach(sdoc=>{
+          const s = sdoc.data();
+          const last = tsToMs(s.lastSeen);
+          if (last>lastMax) lastMax = last;
+          if (last >= cutoff){
+            active++;
+            if (s.nowPlaying?.title){
+              const np=s.nowPlaying;
+              if (np.type==='serie' && (np.season!=null) && (np.episodeIndex!=null)){
+                nowPlayingStr = nowPlayingStr || `${np.title} · T${np.season}E${np.episodeIndex+1}`;
+              } else {
+                nowPlayingStr = nowPlayingStr || np.title;
+              }
+            }
+          }
+        });
+
+        arr.push({ id:doc.id, ...u, _dias:dias, _venceTs:finTs, _activeCount:active, _lastSeenMax:lastMax, _nowPlayingStr:nowPlayingStr });
+      }
+
+      usersCache = arr;
+      applyUserFilters(); // pinta con los filtros actuales
     }
 
     // ================= Categorías (para selects y filtros) =================
@@ -402,27 +845,24 @@
         document.getElementById("filtrarCategoriaPeliculas"),
         document.getElementById("filtrarCategoriaSeries")
       ];
-      // reset
       selects.forEach(sel=>{
         if (!sel) return;
         const first = sel.id.startsWith('filtrar') ? 'Todas' : 'Seleccionar Categoría';
         sel.innerHTML = `<option value="">${first}</option>`;
       });
-
       const snap = await db.collection("categorias").get();
       snap.forEach(doc=>{
         const nombre = doc.data().nombre;
         selects.forEach(sel=>{
           if (!sel) return;
           const opt = document.createElement("option");
-          opt.value = nombre;
-          opt.textContent = nombre;
+          opt.value = nombre; opt.textContent = nombre;
           sel.appendChild(opt.cloneNode(true));
         });
       });
     }
 
-    // ================= Listados: búsqueda + filtros (Realtime) =================
+    // ================= Películas/Series listas (Realtime) =================
     let peliculasCache = [];
     let seriesCache = [];
     let unsubPeliculas = null;
@@ -448,7 +888,6 @@
       });
       document.getElementById('peliculasCounter').textContent = `${list.length} resultado(s)`;
     }
-
     function renderSeriesList(list){
       const contenedor = document.getElementById("contenidoListSeries");
       contenedor.innerHTML = "";
@@ -482,7 +921,6 @@
       );
       renderPeliculasList(filtered);
     }
-
     function applySeriesFilters(){
       const txt = (document.getElementById('buscarSeries').value || "").toLowerCase();
       const cat = document.getElementById('filtrarCategoriaSeries').value;
@@ -493,7 +931,6 @@
       renderSeriesList(filtered);
     }
 
-    // Watchers en tiempo real
     function startRealtimeLists(){
       if (unsubPeliculas) unsubPeliculas();
       if (unsubSeries) unsubSeries();
@@ -511,7 +948,7 @@
         });
     }
 
-    // ================= Eliminar contenido =================
+    // ================= Eliminar contenido (películas/series) =================
     function eliminarContenido(id) {
       if (confirm("¿Eliminar este contenido?")) {
         db.collection("peliculas").doc(id).delete();
@@ -530,28 +967,18 @@
       const seccion = document.getElementById('seccionPelicula').value || 'pelicula';
       const descripcion = normalizeStr(document.getElementById('descripcionPelicula').value);
 
-      if (!titulo || !categoria || !peliculaRaw) {
-        alert("Título, categoría y película son obligatorios.");
-        return;
-      }
+      if (!titulo || !categoria || !peliculaRaw) { alert("Título, categoría y película son obligatorios."); return; }
       if (categoriaNueva) await ensureCategoria(categoriaNueva);
 
       const trailer = trailerRaw ? parseFuente(trailerRaw) : "";
       const pelicula = parseFuente(peliculaRaw);
 
-      const docData = { titulo, descripcion, imagen, trailer, pelicula, seccion, categoria };
-      await db.collection("peliculas").add(docData);
+      await db.collection("peliculas").add({ titulo, descripcion, imagen, trailer, pelicula, seccion, categoria });
       alert("✅ Película guardada.");
 
-      // limpiar
-      document.getElementById('tituloPelicula').value="";
-      document.getElementById('descripcionPelicula').value="";
-      document.getElementById('imagenPelicula').value="";
-      document.getElementById('trailerPelicula').value="";
-      document.getElementById('pelicula').value="";
+      ['tituloPelicula','descripcionPelicula','imagenPelicula','trailerPelicula','pelicula','nuevaCategoriaPelicula'].forEach(id=>document.getElementById(id).value="");
       document.getElementById('seccionPelicula').value="pelicula";
-      document.getElementById('nuevaCategoriaPelicula').value="";
-      volverAlPanelPrincipal(); // vuelve y la lista se actualiza sola (realtime)
+      volverAlPanelPrincipal();
     });
     document.getElementById("btnLimpiarPelicula").addEventListener("click", ()=>{
       ['tituloPelicula','descripcionPelicula','imagenPelicula','trailerPelicula','pelicula','nuevaCategoriaPelicula'].forEach(id=>document.getElementById(id).value="");
@@ -698,10 +1125,8 @@
       });
 
       temporadas.sort((a,b)=>(a.numero??0)-(b.numero??0));
-
       return { titulo, descripcion, imagen, categoria, seccion:"serie", trailer, temporadas };
     }
-
     function validarSerie(s) {
       const errs = [];
       if (!s.titulo) errs.push("• El título es obligatorio.");
@@ -716,14 +1141,12 @@
       return errs;
     }
 
-    let serieEditId = null;
-    document.getElementById('btnAddTemp').addEventListener('click', ()=>{
-      contTemps.appendChild(crearBloqueTemporada());
-    });
+    document.getElementById('btnAddTemp').addEventListener('click', ()=> contTemps.appendChild(crearBloqueTemporada()));
     document.getElementById('btnVistaPreviaSerie').addEventListener('click', ()=>{
       const s = construirSerieDesdeForm();
       document.getElementById('previewSerie').textContent = JSON.stringify(s,null,2);
     });
+    let serieEditId = null;
     document.getElementById('btnGuardarSerie').addEventListener('click', async ()=>{
       const s = construirSerieDesdeForm();
       const errs = validarSerie(s);
@@ -733,17 +1156,12 @@
       const categoriaNueva = normalizeStr(document.getElementById('nuevaCategoriaSerie').value);
       if (categoriaNueva) await ensureCategoria(categoriaNueva);
 
-      if (serieEditId) {
-        await db.collection("peliculas").doc(serieEditId).update(s);
-        alert("✅ Serie actualizada.");
-      } else {
-        await db.collection("peliculas").add(s);
-        alert("✅ Serie creada.");
-      }
+      if (serieEditId) { await db.collection("peliculas").doc(serieEditId).update(s); alert("✅ Serie actualizada."); }
+      else { await db.collection("peliculas").add(s); alert("✅ Serie creada."); }
+
       cancelarEdicionSerie();
-      volverAlPanelPrincipal(); // las listas se actualizan solas (realtime)
+      volverAlPanelPrincipal();
     });
-    document.getElementById('btnCancelarEdicionSerie').addEventListener('click', cancelarEdicionSerie);
     function cancelarEdicionSerie(){
       serieEditId = null;
       document.getElementById('btnCancelarEdicionSerie').classList.add('hidden');
@@ -771,23 +1189,42 @@
       document.getElementById('previewSerie').textContent = JSON.stringify(s,null,2);
     }
 
-    // ================= Filtros listeners =================
+    // ======= Listeners filtros usuarios =======
+    document.getElementById('uBuscar').addEventListener('input', applyUserFilters);
+    document.getElementById('uEstado').addEventListener('change', applyUserFilters);
+    document.getElementById('uVenceEn').addEventListener('input', applyUserFilters);
+    document.getElementById('uSoloPorVencer').addEventListener('click', ()=>{
+      document.getElementById('uVenceEn').value = 3;
+      document.getElementById('uEstado').value = ''; // no forzamos estado
+      applyUserFilters();
+    });
+    document.getElementById('uLimpiarFiltros').addEventListener('click', ()=>{
+      document.getElementById('uBuscar').value = '';
+      document.getElementById('uEstado').value = '';
+      document.getElementById('uVenceEn').value = '';
+      applyUserFilters();
+    });
+
+    // ================= Filtros Películas/Series =================
     document.getElementById('buscarPeliculas').addEventListener('input', applyPeliculasFilters);
     document.getElementById('filtrarCategoriaPeliculas').addEventListener('change', applyPeliculasFilters);
     document.getElementById('buscarSeries').addEventListener('input', applySeriesFilters);
     document.getElementById('filtrarCategoriaSeries').addEventListener('change', applySeriesFilters);
 
-    // ================= Init =================
+    // ================= Init (tras login) =================
     async function init(){
       await cargarCategorias();
-      cargarUsuarios();
-      startRealtimeLists(); // activa onSnapshot y render con filtros
+      await cargarUsuarios();
+      startRealtimeLists();
     }
-    init();
   </script>
 
 </body>
 </html>
+
+
+
+
 
 
 
