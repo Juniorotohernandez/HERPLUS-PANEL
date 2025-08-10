@@ -9,281 +9,783 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
-  <h1 class="text-3xl font-bold mb-6">Panel de Administración HERPLUS</h1>
 
-  <!-- CREAR CLIENTE -->
-  <section class="mb-10">
-    <h2 class="text-xl font-bold mb-2">👤 Crear Cliente</h2>
-    <div class="grid md:grid-cols-6 gap-4">
-      <input id="nombre" type="text" placeholder="Nombre" class="p-2 rounded text-black">
-      <input id="codigo" type="text" placeholder="Código" class="p-2 rounded text-black">
-      <input id="meses" type="number" placeholder="Meses" class="p-2 rounded text-black">
-      <input id="pantallas" type="number" placeholder="Pantallas" class="p-2 rounded text-black">
-      <select id="activo" class="p-2 rounded text-black">
-        <option value="true">Activo</option>
-        <option value="false">Inactivo</option>
-      </select>
-      <button onclick="crearCliente()" class="bg-blue-600 px-4 py-2 rounded">Crear</button>
+  <!-- Panel Principal -->
+  <div id="panelPrincipal" class="space-y-6">
+    <h1 class="text-3xl font-bold mb-6">Panel de Administración HERPLUS</h1>
+
+    <!-- Crear Cliente -->
+    <section class="mb-10">
+      <h2 class="text-xl font-bold mb-2">👤 Crear Cliente</h2>
+      <div class="grid md:grid-cols-7 gap-4">
+        <input id="nombre" type="text" placeholder="Nombre" class="p-2 rounded text-black">
+        <input id="codigo" type="text" placeholder="Código" class="p-2 rounded text-black">
+        <input id="meses" type="number" placeholder="Meses" class="p-2 rounded text-black">
+        <input id="pantallas" type="number" placeholder="Pantallas" class="p-2 rounded text-black">
+        <select id="activo" class="p-2 rounded text-black">
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
+        </select>
+        <button id="btnCrearCliente" class="bg-blue-600 px-4 py-2 rounded">Crear</button>
+        <button id="btnRecargarUsuarios" class="bg-gray-600 px-4 py-2 rounded">Recargar</button>
+      </div>
+    </section>
+
+    <!-- Listado de Usuarios Registrados -->
+    <section class="mb-10">
+      <h2 class="text-xl font-bold mb-2">👥 Usuarios Registrados</h2>
+      <div id="usuariosList" class="mt-4 space-y-3"></div>
+    </section>
+
+    <!-- Botones para acceder a paneles -->
+    <div class="space-x-4">
+      <button onclick="mostrarPanelSubirSeries()" class="bg-green-600 px-6 py-3 rounded text-white font-semibold">
+        Subir / Editar Serie
+      </button>
+      <button onclick="mostrarPanelSubirPelicula()" class="bg-blue-600 px-6 py-3 rounded text-white font-semibold">
+        Subir / Editar Película
+      </button>
     </div>
-    <div id="clientesList" class="mt-6 space-y-3"></div>
-  </section>
 
-  <!-- SUBIR CONTENIDO -->
-  <section class="mb-10">
-    <h2 class="text-xl font-bold mb-2">🎬 Subir Contenido</h2>
-    <div class="grid md:grid-cols-3 gap-4">
-      <input id="titulo" type="text" placeholder="Título" class="p-2 rounded text-black">
-      <input id="descripcion" type="text" placeholder="Descripción" class="p-2 rounded text-black">
-      <input id="imagen" type="text" placeholder="URL de Imagen" class="p-2 rounded text-black">
-      <input id="trailer" type="text" placeholder="URL del Trailer" class="p-2 rounded text-black">
-      <input id="pelicula" type="text" placeholder="URL de la Película" class="p-2 rounded text-black">
-      <select id="seccion" class="p-2 rounded text-black">
-        <option value="pelicula">Película</option>
-        <option value="serie">Serie</option>
-        <option value="tv">TV en vivo</option>
-      </select>
-      <select id="categoria" class="p-2 rounded text-black"></select>
-      <input id="nuevaCategoria" type="text" placeholder="Agregar nueva categoría" class="p-2 rounded text-black">
-      <button onclick="subirContenido()" class="bg-green-600 px-4 py-2 rounded">Subir</button>
-    </div>
-  </section>
+    <!-- FILTROS PELÍCULAS -->
+    <section class="mt-8">
+      <h2 class="text-xl font-bold mb-2">🎞️ Películas</h2>
+      <div class="flex flex-wrap gap-3 items-end mb-3">
+        <div>
+          <label class="block text-sm mb-1">Buscar</label>
+          <input id="buscarPeliculas" type="text" class="p-2 rounded text-black" placeholder="Título...">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Categoría</label>
+          <select id="filtrarCategoriaPeliculas" class="p-2 rounded text-black">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="ml-auto text-sm text-gray-300">
+          <span id="peliculasCounter">0 resultado(s)</span>
+        </div>
+      </div>
+      <div id="contenidoListPeliculas" class="space-y-3"></div>
 
-  <!-- LISTADO DE CONTENIDO -->
-  <section class="mb-10">
-    <h2 class="text-xl font-bold mb-4">📂 Contenido Subido</h2>
-    <div id="contenidoList" class="space-y-4"></div>
-  </section>
+      <!-- FILTROS SERIES -->
+      <h2 class="text-xl font-bold mb-4 mt-8">📺 Series</h2>
+      <div class="flex flex-wrap gap-3 items-end mb-3">
+        <div>
+          <label class="block text-sm mb-1">Buscar</label>
+          <input id="buscarSeries" type="text" class="p-2 rounded text-black" placeholder="Título...">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Categoría</label>
+          <select id="filtrarCategoriaSeries" class="p-2 rounded text-black">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="ml-auto text-sm text-gray-300">
+          <span id="seriesCounter">0 resultado(s)</span>
+        </div>
+      </div>
+      <div id="contenidoListSeries" class="space-y-3"></div>
+    </section>
+  </div>
 
-  <!-- LISTADO DE CATEGORÍAS -->
-  <section class="mb-10">
-    <h2 class="text-xl font-bold mb-4">🗂 Categorías Guardadas</h2>
-    <div id="listaCategorias" class="space-y-2"></div>
-  </section>
-
-  <!-- MODAL DE EDICIÓN -->
-  <div id="modalEdicion" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
+  <!-- Modal de Edición de Usuario -->
+  <div id="modalEdicionUsuario" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
     <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
-      <button onclick="cerrarModal()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
-      <h3 class="text-lg font-bold mb-4">Editar Contenido</h3>
+      <button onclick="cerrarModalEdicion()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
+      <h3 class="text-lg font-bold mb-4">Editar Usuario</h3>
       <div class="grid gap-2">
-        <input id="editTitulo" class="p-2 rounded text-black" placeholder="Título" />
-        <input id="editDescripcion" class="p-2 rounded text-black" placeholder="Descripción" />
-        <input id="editImagen" class="p-2 rounded text-black" placeholder="Imagen" />
-        <input id="editTrailer" class="p-2 rounded text-black" placeholder="Trailer" />
-        <input id="editPelicula" class="p-2 rounded text-black" placeholder="Película" />
-        <select id="editSeccion" class="p-2 rounded text-black">
+        <input id="editNombre" class="p-2 rounded text-black" placeholder="Nombre" />
+        <input id="editCodigo" class="p-2 rounded text-black" placeholder="Código" />
+        <input id="editMeses" class="p-2 rounded text-black" placeholder="Meses" />
+        <input id="editPantallas" class="p-2 rounded text-black" placeholder="Pantallas" />
+        <select id="editActivo" class="p-2 rounded text-black">
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
+        </select>
+        <button id="btnGuardarUsuario" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
+        <button onclick="cerrarModalEdicion()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Película -->
+  <div id="modalEdicionPelicula" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center">
+    <div class="bg-gray-800 p-6 rounded w-full max-w-xl relative">
+      <button onclick="cerrarModalEdicionPelicula()" class="absolute top-2 right-3 text-red-500 text-xl font-bold">✖</button>
+      <h3 class="text-lg font-bold mb-4">Editar Película</h3>
+      <div class="grid gap-2">
+        <input id="editTituloPelicula" class="p-2 rounded text-black" placeholder="Título" />
+        <input id="editDescripcionPelicula" class="p-2 rounded text-black" placeholder="Descripción" />
+        <input id="editImagenPelicula" class="p-2 rounded text-black" placeholder="Imagen (URL)" />
+        <input id="editTrailerPelicula" class="p-2 rounded text-black" placeholder="Trailer (URL o iframe)" />
+        <input id="editPelicula" class="p-2 rounded text-black" placeholder="Película (URL o iframe)" />
+        <select id="editSeccionPelicula" class="p-2 rounded text-black">
           <option value="pelicula">Película</option>
           <option value="serie">Serie</option>
           <option value="tv">TV en vivo</option>
         </select>
-        <select id="editCategoria" class="p-2 rounded text-black"></select>
-        <button onclick="guardarEdicion()" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
-        <button onclick="cerrarModal()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
+        <select id="editCategoriaPelicula" class="p-2 rounded text-black"></select>
+        <input id="editNuevaCategoriaPelicula" class="p-2 rounded text-black" placeholder="Agregar nueva categoría (opcional)" />
+        <button id="btnGuardarPelicula" class="bg-blue-500 px-4 py-2 rounded mt-2">Guardar</button>
+        <button onclick="cerrarModalEdicionPelicula()" class="bg-gray-600 px-4 py-2 rounded">Cancelar</button>
       </div>
     </div>
   </div>
+
+  <!-- Panel Subir Series -->
+  <div id="panelSubirSeries" class="hidden space-y-6">
+    <h1 class="text-3xl font-bold mb-6">Series • Crear / Editar</h1>
+
+    <div class="bg-gray-800 p-6 rounded-lg mb-6">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Título</label>
+          <input id="tituloSerie" type="text" class="p-2 text-black rounded w-full" placeholder="Título de la serie">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Categoría</label>
+          <select id="categoriaSerie" class="p-2 text-black rounded w-full">
+            <option value="">Seleccionar Categoría</option>
+          </select>
+          <input id="nuevaCategoriaSerie" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm mb-1">Portada (URL imagen)</label>
+          <input id="imagenSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
+          <input id="trailerSerie" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm mb-1">Descripción</label>
+        <textarea id="descripcionSerie" rows="3" class="p-2 text-black rounded w-full" placeholder="Resumen..."></textarea>
+      </div>
+
+      <div class="flex items-center justify-between mt-6">
+        <h2 class="text-lg font-semibold">Temporadas</h2>
+        <div class="space-x-2">
+          <button id="btnAddTemp" class="bg-green-600 px-3 py-2 rounded">+ Agregar temporada</button>
+          <button id="btnVistaPreviaSerie" class="bg-amber-500 px-3 py-2 rounded text-black">Vista previa</button>
+          <button id="btnGuardarSerie" class="bg-blue-600 px-3 py-2 rounded">Guardar Serie</button>
+          <button id="btnCancelarEdicionSerie" class="bg-gray-600 px-3 py-2 rounded hidden">Cancelar edición</button>
+        </div>
+      </div>
+
+      <div id="contenedorTemporadas" class="space-y-4 mt-4"></div>
+      <pre id="previewSerie" class="bg-black bg-opacity-40 p-3 rounded overflow-auto mt-4" style="max-height:260px; white-space:pre-wrap; font-size:12px;">{}</pre>
+    </div>
+
+    <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
+      Volver al Panel Principal
+    </button>
+  </div>
+
+  <!-- Panel Subir Película -->
+  <div id="panelSubirPelicula" class="hidden space-y-6">
+    <h1 class="text-3xl font-bold mb-6">Películas • Crear</h1>
+
+    <div class="bg-gray-800 p-6 rounded-lg mb-6">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Título</label>
+          <input id="tituloPelicula" type="text" class="p-2 text-black rounded w-full">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Categoría</label>
+          <select id="categoriaPelicula" class="p-2 text-black rounded w-full">
+            <option value="">Seleccionar Categoría</option>
+          </select>
+          <input id="nuevaCategoriaPelicula" type="text" class="p-2 text-black rounded w-full mt-2" placeholder="Agregar nueva categoría (opcional)">
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm mb-1">Portada (URL imagen)</label>
+          <input id="imagenPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
+          <input id="trailerPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm mb-1">Película (URL o iframe)</label>
+          <input id="pelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o <iframe ...>">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Sección</label>
+          <select id="seccionPelicula" class="p-2 text-black rounded w-full">
+            <option value="pelicula">Película</option>
+            <option value="tv">TV en vivo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm mb-1">Descripción</label>
+        <input id="descripcionPelicula" type="text" class="p-2 text-black rounded w-full">
+      </div>
+
+      <div class="flex gap-2 mt-6">
+        <button id="btnSubirPelicula" class="bg-green-600 px-4 py-2 rounded">Subir Película</button>
+        <button id="btnLimpiarPelicula" class="bg-gray-600 px-4 py-2 rounded">Limpiar</button>
+      </div>
+    </div>
+
+    <button onclick="volverAlPanelPrincipal()" class="w-full bg-red-600 py-2 rounded text-white font-semibold">
+      Volver al Panel Principal
+    </button>
+  </div>
+
   <script>
-    // Configuración Firebase
+    // ================= Firebase =================
     const firebaseConfig = {
       apiKey: "AIzaSyD_v8yXx1W6zcGFXXMHeNJh0RSzbnO-j84",
       authDomain: "herplus.firebaseapp.com",
       projectId: "herplus",
-      storageBucket: "herplus.firebasestorage.app",
+      storageBucket: "herplus.appspot.com",
       messagingSenderId: "556494279952",
       appId: "1:556494279952:web:f788776f50840b28434195"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let categoriasGuardadas = [];
-    let idEditando = null;
+    // ================= Helpers =================
+    function normalizeInt(v, d=0){ const n = parseInt(v,10); return isNaN(n)?d:n; }
+    function normalizeStr(v){ return (v||"").trim(); }
 
-    function crearCliente() {
+    function normalizarUrlDrive(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes("drive.google.com")) {
+          const m1 = /\/file\/d\/([^/]+)/.exec(u.pathname);
+          if (m1) return `https://drive.google.com/file/d/${m1[1]}/preview`;
+          if (u.pathname === "/open" && u.searchParams.get("id"))
+            return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
+          if (u.pathname === "/uc" && u.searchParams.get("id"))
+            return `https://drive.google.com/file/d/${u.searchParams.get("id")}/preview`;
+        }
+        return url;
+      } catch { return url; }
+    }
+    function extraerSrcDeIframe(html) {
+      const m = /src=["']([^"']+)["']/i.exec(html||"");
+      return m ? m[1] : "";
+    }
+    function parseFuente(valor){
+      if(!valor) return "";
+      const v = valor.trim();
+      const src = v.includes("<iframe") ? (extraerSrcDeIframe(v) || v) : v;
+      return normalizarUrlDrive(src);
+    }
+    async function ensureCategoria(nombre){
+      nombre = normalizeStr(nombre);
+      if(!nombre) return;
+      const snap = await db.collection("categorias").where("nombre","==",nombre).limit(1).get();
+      if (snap.empty) await db.collection("categorias").add({nombre});
+    }
+
+    // ================= Navegación Paneles =================
+    function mostrarPanelSubirSeries() {
+      document.getElementById("panelPrincipal").classList.add("hidden");
+      document.getElementById("panelSubirPelicula").classList.add("hidden");
+      document.getElementById("panelSubirSeries").classList.remove("hidden");
+    }
+    function mostrarPanelSubirPelicula() {
+      document.getElementById("panelPrincipal").classList.add("hidden");
+      document.getElementById("panelSubirSeries").classList.add("hidden");
+      document.getElementById("panelSubirPelicula").classList.remove("hidden");
+    }
+    function volverAlPanelPrincipal() {
+      document.getElementById("panelSubirSeries").classList.add("hidden");
+      document.getElementById("panelSubirPelicula").classList.add("hidden");
+      document.getElementById("panelPrincipal").classList.remove("hidden");
+      cancelarEdicionSerie();
+    }
+
+    // ================= Clientes =================
+    let usuarioEditId = null;
+    document.getElementById("btnCrearCliente").addEventListener("click", async () => {
       const data = {
-        nombre: document.getElementById('nombre').value,
-        codigo: document.getElementById('codigo').value,
-        meses: parseInt(document.getElementById('meses').value),
-        pantallas: parseInt(document.getElementById('pantallas').value),
-        activo: document.getElementById('activo').value === 'true'
+        nombre: normalizeStr(document.getElementById('nombre').value),
+        codigo: normalizeStr(document.getElementById('codigo').value),
+        meses: normalizeInt(document.getElementById('meses').value),
+        pantallas: normalizeInt(document.getElementById('pantallas').value),
+        activo: document.getElementById('activo').value === 'true',
+        fechaRegistro: new Date()
       };
-      db.collection("clientes").add(data).then(() => {
-        alert("✅ Cliente creado.");
-        document.getElementById('nombre').value = '';
-        document.getElementById('codigo').value = '';
-        document.getElementById('meses').value = '';
-        document.getElementById('pantallas').value = '';
-        cargarClientes();
-      });
-    }
-
-    function subirContenido() {
-      let nuevaCat = document.getElementById("nuevaCategoria").value.trim();
-      let categoria = nuevaCat || document.getElementById("categoria").value;
-
-      if (nuevaCat && !categoriasGuardadas.includes(nuevaCat)) {
-        db.collection("categorias").add({ nombre: nuevaCat });
+      if(!data.nombre || !data.codigo || !data.meses){
+        alert("Completa nombre, código y meses.");
+        return;
       }
+      await db.collection("clientes").add(data);
+      alert("✅ Cliente creado.");
+      cargarUsuarios();
+      ['nombre','codigo','meses','pantallas'].forEach(id=>document.getElementById(id).value="");
+      document.getElementById('activo').value='true';
+    });
+    document.getElementById("btnRecargarUsuarios").addEventListener("click", cargarUsuarios);
 
-      const data = {
-        titulo: document.getElementById("titulo").value,
-        descripcion: document.getElementById("descripcion").value,
-        imagen: document.getElementById("imagen").value,
-        trailer: document.getElementById("trailer").value,
-        pelicula: document.getElementById("pelicula").value,
-        seccion: document.getElementById("seccion").value,
-        categoria
-      };
-
-      db.collection("peliculas").add(data).then(() => {
-        alert("🎬 Contenido subido.");
-        document.getElementById("titulo").value = '';
-        document.getElementById("descripcion").value = '';
-        document.getElementById("imagen").value = '';
-        document.getElementById("trailer").value = '';
-        document.getElementById("pelicula").value = '';
-        document.getElementById("nuevaCategoria").value = '';
-        cargarContenido();
-      });
-    }
-
-    function cargarContenido() {
-      const contenedor = document.getElementById("contenidoList");
-      contenedor.innerHTML = "";
-      db.collection("peliculas").get().then(snapshot => {
-        snapshot.forEach(doc => {
-          const c = doc.data();
-          const div = document.createElement("div");
-          div.className = "bg-gray-800 p-4 rounded";
-          div.innerHTML = `
-            <strong>${c.titulo}</strong> - ${c.categoria} (${c.seccion})<br>
-            <button onclick="editarContenido('${doc.id}')" class="bg-blue-600 px-2 py-1 rounded mr-2">Editar</button>
-            <button onclick="eliminarContenido('${doc.id}')" class="bg-red-600 px-2 py-1 rounded">Eliminar</button>
-          `;
-          contenedor.appendChild(div);
-        });
-      });
-    }
-
-    function eliminarContenido(id) {
-      if (confirm("¿Eliminar este contenido?")) {
-        db.collection("peliculas").doc(id).delete().then(() => {
-          cargarContenido();
-        });
-      }
-    }
-
-    function cargarCategorias() {
-      const select = document.getElementById("categoria");
-      const editSelect = document.getElementById("editCategoria");
-      const lista = document.getElementById("listaCategorias");
-
-      select.innerHTML = "";
-      editSelect.innerHTML = "";
-      lista.innerHTML = "";
-      categoriasGuardadas = [];
-
-      db.collection("categorias").get().then(snapshot => {
-        snapshot.forEach(doc => {
-          const nombre = doc.data().nombre;
-          categoriasGuardadas.push(nombre);
-
-          let opt = document.createElement("option");
-          opt.value = nombre;
-          opt.textContent = nombre;
-          select.appendChild(opt);
-
-          let opt2 = document.createElement("option");
-          opt2.value = nombre;
-          opt2.textContent = nombre;
-          editSelect.appendChild(opt2);
-
-          // Mostrar en la lista con botón eliminar
-          const div = document.createElement("div");
-          div.className = "bg-gray-800 p-2 rounded flex justify-between items-center";
-          div.innerHTML = `
-            <span>${nombre}</span>
-            <button onclick="eliminarCategoria('${doc.id}')" class="bg-red-600 px-2 py-1 rounded">Eliminar</button>
-          `;
-          lista.appendChild(div);
-        });
-      });
-    }
-
-    function eliminarCategoria(id) {
-      if (confirm("¿Eliminar esta categoría?")) {
-        db.collection("categorias").doc(id).delete().then(() => {
-          cargarCategorias();
-        });
-      }
-    }
-
-    function editarContenido(id) {
-      idEditando = id;
-      db.collection("peliculas").doc(id).get().then(doc => {
-        const d = doc.data();
-        document.getElementById("editTitulo").value = d.titulo;
-        document.getElementById("editDescripcion").value = d.descripcion;
-        document.getElementById("editImagen").value = d.imagen;
-        document.getElementById("editTrailer").value = d.trailer;
-        document.getElementById("editPelicula").value = d.pelicula;
-        document.getElementById("editSeccion").value = d.seccion;
-        document.getElementById("editCategoria").value = d.categoria;
-        document.getElementById("modalEdicion").classList.remove("hidden");
-      });
-    }
-
-    function guardarEdicion() {
-      const editado = {
-        titulo: document.getElementById("editTitulo").value,
-        descripcion: document.getElementById("editDescripcion").value,
-        imagen: document.getElementById("editImagen").value,
-        trailer: document.getElementById("editTrailer").value,
-        pelicula: document.getElementById("editPelicula").value,
-        seccion: document.getElementById("editSeccion").value,
-        categoria: document.getElementById("editCategoria").value
-      };
-      db.collection("peliculas").doc(idEditando).update(editado).then(() => {
-        cerrarModal();
-        cargarContenido();
-      });
-    }
-
-    function cerrarModal() {
-      document.getElementById("modalEdicion").classList.add("hidden");
-      idEditando = null;
-    }
-
-    function cargarClientes() {
-      const cont = document.getElementById("clientesList");
+    function cargarUsuarios() {
+      const cont = document.getElementById("usuariosList");
       cont.innerHTML = "";
-      db.collection("clientes").get().then(snapshot => {
+      db.collection("clientes").orderBy("nombre").get().then(snapshot => {
         snapshot.forEach(doc => {
-          const c = doc.data();
+          const u = doc.data();
           const div = document.createElement("div");
-          div.className = "bg-gray-800 p-4 rounded";
+          div.className = "bg-gray-800 p-4 rounded flex items-center justify-between";
           div.innerHTML = `
-            <strong>${c.nombre}</strong> - ${c.codigo} (${c.meses} meses / ${c.pantallas} pantallas) - ${c.activo ? 'Activo' : 'Inactivo'}<br>
-            <button onclick="editarCliente('${doc.id}')" class="bg-blue-600 px-2 py-1 rounded mr-2">Editar</button>
-            <button onclick="eliminarCliente('${doc.id}')" class="bg-red-600 px-2 py-1 rounded">Eliminar</button>
+            <div>
+              <strong>${u.nombre}</strong> — <span class="text-sm">${u.codigo}</span><br>
+              <span class="text-sm">${u.meses} mes(es) / ${u.pantallas} pantalla(s) — ${u.activo?'Activo':'Inactivo'}</span>
+            </div>
+            <div class="space-x-2">
+              <button class="bg-blue-600 px-2 py-1 rounded" onclick="editarUsuario('${doc.id}')">Editar</button>
+              <button class="bg-red-600 px-2 py-1 rounded" onclick="eliminarUsuario('${doc.id}')">Eliminar</button>
+            </div>
           `;
           cont.appendChild(div);
         });
       });
     }
+    function eliminarUsuario(id) {
+      if (confirm("¿Eliminar este usuario?")) {
+        db.collection("clientes").doc(id).delete().then(cargarUsuarios);
+      }
+    }
+    function editarUsuario(id) {
+      usuarioEditId = id;
+      db.collection("clientes").doc(id).get().then(doc => {
+        const u = doc.data();
+        document.getElementById('editNombre').value = u.nombre || "";
+        document.getElementById('editCodigo').value = u.codigo || "";
+        document.getElementById('editMeses').value = u.meses || 0;
+        document.getElementById('editPantallas').value = u.pantallas || 0;
+        document.getElementById('editActivo').value = u.activo ? 'true' : 'false';
+        document.getElementById("modalEdicionUsuario").classList.remove("hidden");
+      });
+    }
+    document.getElementById("btnGuardarUsuario").addEventListener("click", async () => {
+      if (!usuarioEditId) return;
+      const updatedData = {
+        nombre: normalizeStr(document.getElementById('editNombre').value),
+        codigo: normalizeStr(document.getElementById('editCodigo').value),
+        meses: normalizeInt(document.getElementById('editMeses').value),
+        pantallas: normalizeInt(document.getElementById('editPantallas').value),
+        activo: document.getElementById('editActivo').value === 'true'
+      };
+      await db.collection("clientes").doc(usuarioEditId).update(updatedData);
+      alert("✅ Usuario actualizado.");
+      usuarioEditId = null;
+      cerrarModalEdicion();
+      cargarUsuarios();
+    });
+    function cerrarModalEdicion() {
+      document.getElementById("modalEdicionUsuario").classList.add("hidden");
+    }
 
-    function eliminarCliente(id) {
-      if (confirm("¿Eliminar este cliente?")) {
-        db.collection("clientes").doc(id).delete().then(() => {
-          cargarClientes();
+    // ================= Categorías (para selects y filtros) =================
+    async function cargarCategorias() {
+      const selects = [
+        document.getElementById("categoriaSerie"),
+        document.getElementById("categoriaPelicula"),
+        document.getElementById("editCategoriaPelicula"),
+        document.getElementById("filtrarCategoriaPeliculas"),
+        document.getElementById("filtrarCategoriaSeries")
+      ];
+      // reset
+      selects.forEach(sel=>{
+        if (!sel) return;
+        const first = sel.id.startsWith('filtrar') ? 'Todas' : 'Seleccionar Categoría';
+        sel.innerHTML = `<option value="">${first}</option>`;
+      });
+
+      const snap = await db.collection("categorias").get();
+      snap.forEach(doc=>{
+        const nombre = doc.data().nombre;
+        selects.forEach(sel=>{
+          if (!sel) return;
+          const opt = document.createElement("option");
+          opt.value = nombre;
+          opt.textContent = nombre;
+          sel.appendChild(opt.cloneNode(true));
         });
+      });
+    }
+
+    // ================= Listados: búsqueda + filtros (Realtime) =================
+    let peliculasCache = [];
+    let seriesCache = [];
+    let unsubPeliculas = null;
+    let unsubSeries = null;
+
+    function renderPeliculasList(list){
+      const contenedor = document.getElementById("contenidoListPeliculas");
+      contenedor.innerHTML = "";
+      list.sort((a,b)=> (a.titulo||"").localeCompare(b.titulo||""));
+      list.forEach(doc => {
+        const div = document.createElement("div");
+        div.className = "bg-gray-800 p-4 rounded flex items-center justify-between";
+        div.innerHTML = `
+          <div>
+            <strong>${doc.titulo || '(Sin título)'}</strong> — <span class="text-sm">${doc.categoria || 'Sin categoría'}</span>
+          </div>
+          <div class="space-x-2">
+            <button class="bg-blue-600 px-2 py-1 rounded" onclick="editarPelicula('${doc.id}')">Editar</button>
+            <button class="bg-red-600 px-2 py-1 rounded" onclick="eliminarContenido('${doc.id}')">Eliminar</button>
+          </div>
+        `;
+        contenedor.appendChild(div);
+      });
+      document.getElementById('peliculasCounter').textContent = `${list.length} resultado(s)`;
+    }
+
+    function renderSeriesList(list){
+      const contenedor = document.getElementById("contenidoListSeries");
+      contenedor.innerHTML = "";
+      list.sort((a,b)=> (a.titulo||"").localeCompare(b.titulo||""));
+      list.forEach(doc => {
+        const temporadas = Array.isArray(doc.temporadas) ? doc.temporadas.length : 0;
+        const episodios = (doc.temporadas||[]).reduce((acc,t)=>acc + (t.episodios?.length||0),0);
+        const div = document.createElement("div");
+        div.className = "bg-gray-800 p-4 rounded flex items-center justify-between";
+        div.innerHTML = `
+          <div>
+            <strong>${doc.titulo || '(Sin título)'}</strong> — <span class="text-sm">${doc.categoria || 'Sin categoría'}</span><br>
+            <span class="text-xs">${temporadas} temporada(s), ${episodios} episodio(s)</span>
+          </div>
+          <div class="space-x-2">
+            <button class="bg-blue-600 px-2 py-1 rounded" onclick="editarSerie('${doc.id}')">Editar</button>
+            <button class="bg-red-600 px-2 py-1 rounded" onclick="eliminarContenido('${doc.id}')">Eliminar</button>
+          </div>
+        `;
+        contenedor.appendChild(div);
+      });
+      document.getElementById('seriesCounter').textContent = `${list.length} resultado(s)`;
+    }
+
+    function applyPeliculasFilters(){
+      const txt = (document.getElementById('buscarPeliculas').value || "").toLowerCase();
+      const cat = document.getElementById('filtrarCategoriaPeliculas').value;
+      const filtered = peliculasCache.filter(p =>
+        (!txt || (p.titulo||"").toLowerCase().includes(txt)) &&
+        (!cat || p.categoria === cat)
+      );
+      renderPeliculasList(filtered);
+    }
+
+    function applySeriesFilters(){
+      const txt = (document.getElementById('buscarSeries').value || "").toLowerCase();
+      const cat = document.getElementById('filtrarCategoriaSeries').value;
+      const filtered = seriesCache.filter(s =>
+        (!txt || (s.titulo||"").toLowerCase().includes(txt)) &&
+        (!cat || s.categoria === cat)
+      );
+      renderSeriesList(filtered);
+    }
+
+    // Watchers en tiempo real
+    function startRealtimeLists(){
+      if (unsubPeliculas) unsubPeliculas();
+      if (unsubSeries) unsubSeries();
+
+      unsubPeliculas = db.collection("peliculas").where("seccion","==","pelicula")
+        .onSnapshot(snap=>{
+          peliculasCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+          applyPeliculasFilters();
+        });
+
+      unsubSeries = db.collection("peliculas").where("seccion","==","serie")
+        .onSnapshot(snap=>{
+          seriesCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+          applySeriesFilters();
+        });
+    }
+
+    // ================= Eliminar contenido =================
+    function eliminarContenido(id) {
+      if (confirm("¿Eliminar este contenido?")) {
+        db.collection("peliculas").doc(id).delete();
       }
     }
 
-    // Inicializar todo
-    cargarContenido();
-    cargarCategorias();
-    cargarClientes();
+    // ================= Películas: Crear / Editar =================
+    document.getElementById("btnSubirPelicula").addEventListener("click", async ()=>{
+      const titulo = normalizeStr(document.getElementById('tituloPelicula').value);
+      const categoriaSel = document.getElementById('categoriaPelicula').value;
+      const categoriaNueva = normalizeStr(document.getElementById('nuevaCategoriaPelicula').value);
+      const categoria = categoriaNueva || categoriaSel;
+      const imagen = normalizeStr(document.getElementById('imagenPelicula').value) || 'img/placeholder.jpg';
+      const trailerRaw = normalizeStr(document.getElementById('trailerPelicula').value);
+      const peliculaRaw = normalizeStr(document.getElementById('pelicula').value);
+      const seccion = document.getElementById('seccionPelicula').value || 'pelicula';
+      const descripcion = normalizeStr(document.getElementById('descripcionPelicula').value);
+
+      if (!titulo || !categoria || !peliculaRaw) {
+        alert("Título, categoría y película son obligatorios.");
+        return;
+      }
+      if (categoriaNueva) await ensureCategoria(categoriaNueva);
+
+      const trailer = trailerRaw ? parseFuente(trailerRaw) : "";
+      const pelicula = parseFuente(peliculaRaw);
+
+      const docData = { titulo, descripcion, imagen, trailer, pelicula, seccion, categoria };
+      await db.collection("peliculas").add(docData);
+      alert("✅ Película guardada.");
+
+      // limpiar
+      document.getElementById('tituloPelicula').value="";
+      document.getElementById('descripcionPelicula').value="";
+      document.getElementById('imagenPelicula').value="";
+      document.getElementById('trailerPelicula').value="";
+      document.getElementById('pelicula').value="";
+      document.getElementById('seccionPelicula').value="pelicula";
+      document.getElementById('nuevaCategoriaPelicula').value="";
+      volverAlPanelPrincipal(); // vuelve y la lista se actualiza sola (realtime)
+    });
+    document.getElementById("btnLimpiarPelicula").addEventListener("click", ()=>{
+      ['tituloPelicula','descripcionPelicula','imagenPelicula','trailerPelicula','pelicula','nuevaCategoriaPelicula'].forEach(id=>document.getElementById(id).value="");
+      document.getElementById('seccionPelicula').value="pelicula";
+    });
+
+    let peliculaEditId = null;
+    async function editarPelicula(id){
+      peliculaEditId = id;
+      await cargarCategorias();
+      const docRef = await db.collection("peliculas").doc(id).get();
+      const p = docRef.data();
+      document.getElementById('editTituloPelicula').value = p.titulo || "";
+      document.getElementById('editDescripcionPelicula').value = p.descripcion || "";
+      document.getElementById('editImagenPelicula').value = p.imagen || "";
+      document.getElementById('editTrailerPelicula').value = p.trailer || "";
+      document.getElementById('editPelicula').value = p.pelicula || "";
+      document.getElementById('editSeccionPelicula').value = p.seccion || "pelicula";
+      document.getElementById('editCategoriaPelicula').value = p.categoria || "";
+      document.getElementById("modalEdicionPelicula").classList.remove("hidden");
+    }
+    document.getElementById("btnGuardarPelicula").addEventListener("click", async ()=>{
+      if(!peliculaEditId) return;
+      const categoriaSel = document.getElementById('editCategoriaPelicula').value;
+      const categoriaNueva = normalizeStr(document.getElementById('editNuevaCategoriaPelicula').value);
+      const categoria = categoriaNueva || categoriaSel;
+      if (categoriaNueva) await ensureCategoria(categoriaNueva);
+
+      const updated = {
+        titulo: normalizeStr(document.getElementById('editTituloPelicula').value),
+        descripcion: normalizeStr(document.getElementById('editDescripcionPelicula').value),
+        imagen: normalizeStr(document.getElementById('editImagenPelicula').value),
+        trailer: parseFuente(document.getElementById('editTrailerPelicula').value),
+        pelicula: parseFuente(document.getElementById('editPelicula').value),
+        seccion: document.getElementById('editSeccionPelicula').value || 'pelicula',
+        categoria
+      };
+      await db.collection("peliculas").doc(peliculaEditId).update(updated);
+      alert("✅ Película actualizada.");
+      peliculaEditId = null;
+      cerrarModalEdicionPelicula();
+    });
+    function cerrarModalEdicionPelicula(){
+      document.getElementById("modalEdicionPelicula").classList.add("hidden");
+      document.getElementById('editNuevaCategoriaPelicula').value = "";
+    }
+
+    // ================= Series: Crear / Editar =================
+    const contTemps = document.getElementById('contenedorTemporadas');
+    function crearFilaEpisodio(ep={}) {
+      const row = document.createElement('div');
+      row.className = 'grid md:grid-cols-12 gap-2 items-end bg-gray-900 p-2 rounded';
+      row.innerHTML = `
+        <div class="md:col-span-2">
+          <label class="text-xs">Nº Ep.</label>
+          <input class="p-2 text-black rounded w-full inp-ep-num" type="number" min="1" value="${ep.numero ?? ''}">
+        </div>
+        <div class="md:col-span-5">
+          <label class="text-xs">Título</label>
+          <input class="p-2 text-black rounded w-full inp-ep-titulo" value="${ep.titulo ?? ''}" placeholder="Piloto">
+        </div>
+        <div class="md:col-span-4">
+          <label class="text-xs">Fuente (URL o iframe)</label>
+          <input class="p-2 text-black rounded w-full inp-ep-valor" value="${ep.url ?? ep.iframe ?? ''}" placeholder="https://... o <iframe ...>">
+          <p class="text-xs text-gray-300">Drive se normaliza a /preview automáticamente.</p>
+        </div>
+        <div class="md:col-span-1">
+          <button class="bg-red-600 px-2 py-2 rounded w-full btn-del-ep">X</button>
+        </div>
+      `;
+      row.querySelector('.btn-del-ep').addEventListener('click', ()=> row.remove());
+      return row;
+    }
+    function crearBloqueTemporada(t={}) {
+      const wrap = document.createElement('div');
+      wrap.className = 'rounded-lg p-3 bg-gray-800 border border-gray-700';
+      wrap.innerHTML = `
+        <div class="grid md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs">Nº Temporada</label>
+            <input class="p-2 text-black rounded w-full inp-numero-temp" type="number" min="1" value="${t.numero ?? ''}">
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-xs">Nombre</label>
+            <input class="p-2 text-black rounded w-full inp-nombre-temp" value="${t.nombre ?? ''}" placeholder="Temporada 1">
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-3">
+          <h3 class="font-semibold text-blue-300">Episodios</h3>
+          <div class="space-x-2">
+            <button class="bg-green-600 px-3 py-1 rounded btn-add-ep">+ Episodio</button>
+            <button class="bg-red-600 px-3 py-1 rounded btn-del-temp">Eliminar temporada</button>
+          </div>
+        </div>
+        <div class="space-y-2 cont-episodios mt-2"></div>
+      `;
+      wrap.querySelector('.btn-add-ep').addEventListener('click', ()=>{
+        wrap.querySelector('.cont-episodios').appendChild(crearFilaEpisodio());
+      });
+      wrap.querySelector('.btn-del-temp').addEventListener('click', ()=>{
+        if(confirm("¿Eliminar temporada?")) wrap.remove();
+      });
+      const cont = wrap.querySelector('.cont-episodios');
+      (t.episodios||[]).forEach(ep=> cont.appendChild(crearFilaEpisodio(ep)));
+      if (!(t.episodios && t.episodios.length)) cont.appendChild(crearFilaEpisodio());
+      return wrap;
+    }
+
+    function construirSerieDesdeForm() {
+      const titulo = normalizeStr(document.getElementById('tituloSerie').value);
+      const categoriaSel = document.getElementById('categoriaSerie').value;
+      const categoriaNueva = normalizeStr(document.getElementById('nuevaCategoriaSerie').value);
+      const categoria = categoriaNueva || categoriaSel || 'Sin categoría';
+      const imagen = normalizeStr(document.getElementById('imagenSerie').value) || 'img/placeholder.jpg';
+      const trailerRaw = normalizeStr(document.getElementById('trailerSerie').value);
+      const descripcion = normalizeStr(document.getElementById('descripcionSerie').value);
+
+      let trailer = "";
+      if (trailerRaw) trailer = parseFuente(trailerRaw);
+
+      const temporadas = [];
+      contTemps.querySelectorAll('.rounded-lg.p-3.bg-gray-800').forEach((wrap)=>{
+        const numero = normalizeInt(wrap.querySelector('.inp-numero-temp').value, null);
+        const nombre = normalizeStr(wrap.querySelector('.inp-nombre-temp').value) || (numero ? `Temporada ${numero}` : 'Temporada');
+
+        const episodios = [];
+        wrap.querySelectorAll('.cont-episodios > div').forEach((row, idx)=>{
+          const epNum = normalizeInt(row.querySelector('.inp-ep-num').value, null);
+          const epTitulo = normalizeStr(row.querySelector('.inp-ep-titulo').value) || `Episodio ${idx+1}`;
+          const epVal = normalizeStr(row.querySelector('.inp-ep-valor').value);
+          const url = parseFuente(epVal);
+          if (url) {
+            const obj = { titulo: epTitulo, url };
+            if (epNum) obj.numero = epNum;
+            episodios.push(obj);
+          }
+        });
+
+        if (episodios.length) {
+          const tempObj = { nombre, episodios };
+          if (numero) tempObj.numero = numero;
+          temporadas.push(tempObj);
+        }
+      });
+
+      temporadas.sort((a,b)=>(a.numero??0)-(b.numero??0));
+
+      return { titulo, descripcion, imagen, categoria, seccion:"serie", trailer, temporadas };
+    }
+
+    function validarSerie(s) {
+      const errs = [];
+      if (!s.titulo) errs.push("• El título es obligatorio.");
+      if (!s.categoria) errs.push("• La categoría es obligatoria.");
+      if (!s.temporadas.length) errs.push("• Agrega al menos una temporada con episodios.");
+      s.temporadas.forEach((t, ti)=>{
+        if (!t.episodios?.length) errs.push(`• La temporada ${t.nombre||ti+1} no tiene episodios.`);
+        t.episodios?.forEach((ep, ei)=>{
+          if (!ep.url) errs.push(`• Falta URL en T${t.numero??ti+1} E${ep.numero??ei+1}.`);
+        });
+      });
+      return errs;
+    }
+
+    let serieEditId = null;
+    document.getElementById('btnAddTemp').addEventListener('click', ()=>{
+      contTemps.appendChild(crearBloqueTemporada());
+    });
+    document.getElementById('btnVistaPreviaSerie').addEventListener('click', ()=>{
+      const s = construirSerieDesdeForm();
+      document.getElementById('previewSerie').textContent = JSON.stringify(s,null,2);
+    });
+    document.getElementById('btnGuardarSerie').addEventListener('click', async ()=>{
+      const s = construirSerieDesdeForm();
+      const errs = validarSerie(s);
+      document.getElementById('previewSerie').textContent = JSON.stringify(s,null,2);
+      if (errs.length) { alert("Revisa:\n"+errs.join("\n")); return; }
+
+      const categoriaNueva = normalizeStr(document.getElementById('nuevaCategoriaSerie').value);
+      if (categoriaNueva) await ensureCategoria(categoriaNueva);
+
+      if (serieEditId) {
+        await db.collection("peliculas").doc(serieEditId).update(s);
+        alert("✅ Serie actualizada.");
+      } else {
+        await db.collection("peliculas").add(s);
+        alert("✅ Serie creada.");
+      }
+      cancelarEdicionSerie();
+      volverAlPanelPrincipal(); // las listas se actualizan solas (realtime)
+    });
+    document.getElementById('btnCancelarEdicionSerie').addEventListener('click', cancelarEdicionSerie);
+    function cancelarEdicionSerie(){
+      serieEditId = null;
+      document.getElementById('btnCancelarEdicionSerie').classList.add('hidden');
+      ['tituloSerie','imagenSerie','trailerSerie','descripcionSerie','nuevaCategoriaSerie'].forEach(id=>document.getElementById(id).value="");
+      document.getElementById('categoriaSerie').value="";
+      document.getElementById('previewSerie').textContent="{}";
+      contTemps.innerHTML="";
+    }
+    async function editarSerie(id){
+      await cargarCategorias();
+      const doc = await db.collection("peliculas").doc(id).get();
+      const s = doc.data();
+      serieEditId = id;
+      mostrarPanelSubirSeries();
+      document.getElementById('btnCancelarEdicionSerie').classList.remove('hidden');
+
+      document.getElementById('tituloSerie').value = s.titulo || "";
+      document.getElementById('categoriaSerie').value = s.categoria || "";
+      document.getElementById('imagenSerie').value = s.imagen || "";
+      document.getElementById('trailerSerie').value = s.trailer || "";
+      document.getElementById('descripcionSerie').value = s.descripcion || "";
+      contTemps.innerHTML = "";
+      (s.temporadas||[]).forEach(t=> contTemps.appendChild(crearBloqueTemporada(t)));
+      if (!s.temporadas || !s.temporadas.length) contTemps.appendChild(crearBloqueTemporada());
+      document.getElementById('previewSerie').textContent = JSON.stringify(s,null,2);
+    }
+
+    // ================= Filtros listeners =================
+    document.getElementById('buscarPeliculas').addEventListener('input', applyPeliculasFilters);
+    document.getElementById('filtrarCategoriaPeliculas').addEventListener('change', applyPeliculasFilters);
+    document.getElementById('buscarSeries').addEventListener('input', applySeriesFilters);
+    document.getElementById('filtrarCategoriaSeries').addEventListener('change', applySeriesFilters);
+
+    // ================= Init =================
+    async function init(){
+      await cargarCategorias();
+      cargarUsuarios();
+      startRealtimeLists(); // activa onSnapshot y render con filtros
+    }
+    init();
   </script>
+
 </body>
 </html>
 
