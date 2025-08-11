@@ -106,7 +106,7 @@
       <section class="mb-10">
         <h2 class="text-xl font-bold mb-2">👥 Usuarios Registrados</h2>
 
-        <!-- Filtros de usuarios (NUEVO) -->
+        <!-- Filtros de usuarios -->
         <div class="glass p-4 rounded mb-4">
           <div class="grid md:grid-cols-5 gap-3 items-end">
             <div>
@@ -186,6 +186,36 @@
           </div>
         </div>
         <div id="contenidoListSeries" class="space-y-3"></div>
+
+        <!-- FILTROS TV EN VIVO (NUEVO) -->
+        <h2 class="text-xl font-bold mb-4 mt-8">📡 TV en vivo</h2>
+        <div class="flex flex-wrap gap-3 items-end mb-3">
+          <div>
+            <label class="block text-sm mb-1">Buscar</label>
+            <input id="buscarTV" type="text" class="p-2 rounded text-black" placeholder="Título...">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Categoría</label>
+            <select id="filtrarCategoriaTV" class="p-2 rounded text-black">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="ml-auto text-sm text-gray-300">
+            <span id="tvCounter">0 resultado(s)</span>
+          </div>
+        </div>
+        <div id="contenidoListTV" class="space-y-3"></div>
+      </section>
+
+      <!-- GESTOR DE CATEGORÍAS (NUEVO) -->
+      <section class="mt-10">
+        <h2 class="text-xl font-bold mb-2">🗂️ Categorías</h2>
+        <p class="text-sm text-gray-300 mb-3">Aquí puedes ver todas las categorías guardadas y eliminar duplicadas. Eliminar una categoría <b>no borra</b> películas/series/TV.</p>
+        <div class="flex items-center justify-between mb-3">
+          <button id="btnRecargarCategorias" class="btn btn-gray">Recargar categorías</button>
+          <span id="categoriasCounter" class="pill">0</span>
+        </div>
+        <div id="categoriasList" class="space-y-2"></div>
       </section>
     </div>
 
@@ -316,18 +346,7 @@
 
         <div class="grid md:grid-cols-2 gap-4 mt-4">
           <div>
-            <label class="block text-sm mb-1">Portada (URL imagen)</label>
-            <input id="imagenPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
-            <input id="trailerPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label class="block text-sm mb-1">Película (URL o iframe)</label>
+            <label class="block text-sm mb-1">Película / Canal (URL o iframe)</label>
             <input id="pelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
           </div>
           <div>
@@ -336,6 +355,17 @@
               <option value="pelicula">Película</option>
               <option value="tv">TV en vivo</option>
             </select>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block text-sm mb-1">Portada (URL imagen)</label>
+            <input id="imagenPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://...jpg">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Tráiler (URL o iframe) (opcional)</label>
+            <input id="trailerPelicula" type="text" class="p-2 text-black rounded w-full" placeholder="https://... o &lt;iframe ...&gt;">
           </div>
         </div>
 
@@ -836,23 +866,29 @@
       applyUserFilters(); // pinta con los filtros actuales
     }
 
-    // ================= Categorías (para selects y filtros) =================
+    // ================= Categorías (para selects y panel) =================
+    let categoriasCache = []; // array de {id, nombre}
+
     async function cargarCategorias() {
       const selects = [
         document.getElementById("categoriaSerie"),
         document.getElementById("categoriaPelicula"),
         document.getElementById("editCategoriaPelicula"),
         document.getElementById("filtrarCategoriaPeliculas"),
-        document.getElementById("filtrarCategoriaSeries")
+        document.getElementById("filtrarCategoriaSeries"),
+        document.getElementById("filtrarCategoriaTV")
       ];
       selects.forEach(sel=>{
         if (!sel) return;
-        const first = sel.id.startsWith('filtrar') ? 'Todas' : 'Seleccionar Categoría';
+        const first = sel.id && sel.id.startsWith('filtrar') ? 'Todas' : 'Seleccionar Categoría';
         sel.innerHTML = `<option value="">${first}</option>`;
       });
+
       const snap = await db.collection("categorias").get();
-      snap.forEach(doc=>{
-        const nombre = doc.data().nombre;
+      categoriasCache = snap.docs.map(d=>({ id:d.id, ...(d.data()||{}) }));
+
+      // poblar selects
+      categoriasCache.forEach(({nombre})=>{
         selects.forEach(sel=>{
           if (!sel) return;
           const opt = document.createElement("option");
@@ -860,13 +896,54 @@
           sel.appendChild(opt.cloneNode(true));
         });
       });
+
+      renderCategoriasList();
     }
 
-    // ================= Películas/Series listas (Realtime) =================
+    function renderCategoriasList(){
+      const list = document.getElementById('categoriasList');
+      const counter = document.getElementById('categoriasCounter');
+      list.innerHTML = '';
+      if(!categoriasCache.length){
+        list.innerHTML = `<div class="text-gray-400">No hay categorías guardadas.</div>`;
+        counter.textContent = '0';
+        return;
+      }
+      // Ordenar por nombre para detectar duplicados fácilmente
+      const ordenadas = [...categoriasCache].sort((a,b)=> (a.nombre||'').localeCompare(b.nombre||''));
+      ordenadas.forEach(cat=>{
+        const div = document.createElement('div');
+        div.className = 'bg-gray-800 p-3 rounded flex items-center justify-between';
+        div.innerHTML = `
+          <div><strong>${cat.nombre || '(sin nombre)'}</strong> <span class="text-xs text-gray-400">(${cat.id.slice(0,6)}…)</span></div>
+          <div class="space-x-2">
+            <button class="btn btn-red" data-del-cat="${cat.id}" data-nombre="${cat.nombre||''}">Eliminar</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+      // bind eliminar
+      list.querySelectorAll('[data-del-cat]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-del-cat');
+          const nombre = btn.getAttribute('data-nombre') || '';
+          if(!confirm(`¿Eliminar la categoría "${nombre}"? (No borra contenidos)`)) return;
+          await db.collection('categorias').doc(id).delete();
+          await cargarCategorias();
+        });
+      });
+      counter.textContent = String(categoriasCache.length);
+    }
+
+    document.getElementById('btnRecargarCategorias').addEventListener('click', cargarCategorias);
+
+    // ================= Películas/Series/TV listas (Realtime) =================
     let peliculasCache = [];
     let seriesCache = [];
+    let tvCache = [];
     let unsubPeliculas = null;
     let unsubSeries = null;
+    let unsubTV = null;
 
     function renderPeliculasList(list){
       const contenedor = document.getElementById("contenidoListPeliculas");
@@ -911,6 +988,26 @@
       });
       document.getElementById('seriesCounter').textContent = `${list.length} resultado(s)`;
     }
+    function renderTVList(list){
+      const contenedor = document.getElementById("contenidoListTV");
+      contenedor.innerHTML = "";
+      list.sort((a,b)=> (a.titulo||"").localeCompare(b.titulo||""));
+      list.forEach(doc => {
+        const div = document.createElement("div");
+        div.className = "bg-gray-800 p-4 rounded flex items-center justify-between";
+        div.innerHTML = `
+          <div>
+            <strong>${doc.titulo || '(Sin título)'}</strong> — <span class="text-sm">${doc.categoria || 'Sin categoría'}</span>
+          </div>
+          <div class="space-x-2">
+            <button class="bg-blue-600 px-2 py-1 rounded" onclick="editarPelicula('${doc.id}')">Editar</button>
+            <button class="bg-red-600 px-2 py-1 rounded" onclick="eliminarContenido('${doc.id}')">Eliminar</button>
+          </div>
+        `;
+        contenedor.appendChild(div);
+      });
+      document.getElementById('tvCounter').textContent = `${list.length} resultado(s)`;
+    }
 
     function applyPeliculasFilters(){
       const txt = (document.getElementById('buscarPeliculas').value || "").toLowerCase();
@@ -930,10 +1027,20 @@
       );
       renderSeriesList(filtered);
     }
+    function applyTVFilters(){
+      const txt = (document.getElementById('buscarTV').value || "").toLowerCase();
+      const cat = document.getElementById('filtrarCategoriaTV').value;
+      const filtered = tvCache.filter(t =>
+        (!txt || (t.titulo||"").toLowerCase().includes(txt)) &&
+        (!cat || t.categoria === cat)
+      );
+      renderTVList(filtered);
+    }
 
     function startRealtimeLists(){
       if (unsubPeliculas) unsubPeliculas();
       if (unsubSeries) unsubSeries();
+      if (unsubTV) unsubTV();
 
       unsubPeliculas = db.collection("peliculas").where("seccion","==","pelicula")
         .onSnapshot(snap=>{
@@ -946,9 +1053,16 @@
           seriesCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
           applySeriesFilters();
         });
+
+      // === TV en vivo en tiempo real (NUEVO)
+      unsubTV = db.collection("peliculas").where("seccion","==","tv")
+        .onSnapshot(snap=>{
+          tvCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+          applyTVFilters();
+        });
     }
 
-    // ================= Eliminar contenido (películas/series) =================
+    // ================= Eliminar contenido (películas/series/tv) =================
     function eliminarContenido(id) {
       if (confirm("¿Eliminar este contenido?")) {
         db.collection("peliculas").doc(id).delete();
@@ -967,15 +1081,14 @@
       const seccion = document.getElementById('seccionPelicula').value || 'pelicula';
       const descripcion = normalizeStr(document.getElementById('descripcionPelicula').value);
 
-      if (!titulo || !categoria || !peliculaRaw) { alert("Título, categoría y película son obligatorios."); return; }
+      if (!titulo || !categoria || !peliculaRaw) { alert("Título, categoría y película/canal son obligatorios."); return; }
       if (categoriaNueva) await ensureCategoria(categoriaNueva);
 
       const trailer = trailerRaw ? parseFuente(trailerRaw) : "";
       const pelicula = parseFuente(peliculaRaw);
 
       await db.collection("peliculas").add({ titulo, descripcion, imagen, trailer, pelicula, seccion, categoria });
-      alert("✅ Película guardada.");
-
+      alert("✅ Guardado.");
       ['tituloPelicula','descripcionPelicula','imagenPelicula','trailerPelicula','pelicula','nuevaCategoriaPelicula'].forEach(id=>document.getElementById(id).value="");
       document.getElementById('seccionPelicula').value="pelicula";
       volverAlPanelPrincipal();
@@ -1017,7 +1130,7 @@
         categoria
       };
       await db.collection("peliculas").doc(peliculaEditId).update(updated);
-      alert("✅ Película actualizada.");
+      alert("✅ Contenido actualizado.");
       peliculaEditId = null;
       cerrarModalEdicionPelicula();
     });
@@ -1205,11 +1318,13 @@
       applyUserFilters();
     });
 
-    // ================= Filtros Películas/Series =================
+    // ================= Filtros Películas/Series/TV =================
     document.getElementById('buscarPeliculas').addEventListener('input', applyPeliculasFilters);
     document.getElementById('filtrarCategoriaPeliculas').addEventListener('change', applyPeliculasFilters);
     document.getElementById('buscarSeries').addEventListener('input', applySeriesFilters);
     document.getElementById('filtrarCategoriaSeries').addEventListener('change', applySeriesFilters);
+    document.getElementById('buscarTV').addEventListener('input', applyTVFilters);
+    document.getElementById('filtrarCategoriaTV').addEventListener('change', applyTVFilters);
 
     // ================= Init (tras login) =================
     async function init(){
